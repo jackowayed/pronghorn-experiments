@@ -37,9 +37,8 @@ class Experiment:
         net.start()
 
         # Run experiment
-        #out = subprocess.check_output(["ant", "-f", PRONGHORN_PATH + "/src/single_host/build/build.xml", "run_" + self.task])
-        #print out
-        CLI(net)
+        out = subprocess.check_output(["ant", "-f", PRONGHORN_PATH + "/src/experiments/pronghorn/build/build.xml", "run_" + self.task])
+        print out
 
         # Teardown
         net.stop()
