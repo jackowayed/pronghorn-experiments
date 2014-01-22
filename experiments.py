@@ -46,7 +46,10 @@ class Experiment:
         #floodProc.communicate("")
         
 
-experiments = [Experiment(FlatTopo(switches=1), "NoContentionLatency")]
+#experiments = [Experiment(FlatTopo(switches=1), "NoContentionLatency")]
+experiments = [Experiment(FlatTopo(switches=1), "NoContentionThroughput")]#,
+               #Experiment(FlatTopo(switches=10), "NoContentionThroughput"),
+               #Experiment(FlatTopo(switches=100), "NoContentionThroughput")]
 
 for e in experiments:
     print e.run()
