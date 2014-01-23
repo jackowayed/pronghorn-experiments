@@ -3,6 +3,8 @@
 import subprocess
 import time
 
+import data
+
 #from net-test import FlatTopo
 from mininet.net import Mininet
 from mininet.node import OVSSwitch, Controller, RemoteController
@@ -13,6 +15,7 @@ from mininet.cli import CLI
 
 FLOODLIGHT_PATH = "/vagrant/floodlight"
 PRONGHORN_PATH = "/vagrant/pronghorn"
+PRONGHORN_BUILD_DIR = PRONGHORN_PATH + "/src/experiments/pronghorn/build"
 
 class FlatTopo(Topo):
     "N switches, no connections, no hosts"
@@ -37,7 +40,7 @@ class Experiment:
         net.start()
 
         # Run experiment
-        out = subprocess.check_output(["ant", "-f", PRONGHORN_PATH + "/src/experiments/pronghorn/build/build.xml", "run_" + self.task])
+        out = subprocess.check_output(["ant", "-f", PRONGHORN_BUILD_DIR + "/build.xml", "run_" + self.task])
         print out
 
         # Teardown
@@ -47,9 +50,10 @@ class Experiment:
         
 
 #experiments = [Experiment(FlatTopo(switches=1), "NoContentionLatency")]
-experiments = [Experiment(FlatTopo(switches=1), "NoContentionThroughput")]#,
+experiments = [Experiment(FlatTopo(switches=100), "NoContentionThroughput")]#,
                #Experiment(FlatTopo(switches=10), "NoContentionThroughput"),
                #Experiment(FlatTopo(switches=100), "NoContentionThroughput")]
 
 for e in experiments:
     print e.run()
+    print data.throughput(PRONGHORN_BUILD_DIR + "/classes/times.csv", 0.1)
