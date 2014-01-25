@@ -82,7 +82,7 @@ class LatencyExperiment(Experiment):
     def __init__(self, rtt):
         topo = FlatTopo(switches=1)
         filename_flag = "-Doutput_filename=%s/latency_no_contention/%d.csv" % (PAPER_DATA, rtt * 1000)
-        Experiment.__init__(self, topology, "NoContentionLatency", rtt, [filename_flag])
+        Experiment.__init__(self, topo, "NoContentionLatency", rtt, [filename_flag])
 
 
 class ThroughputExperiment(Experiment):
@@ -103,9 +103,7 @@ def run(experiments):
         print e.run()
 
 def latency():
-    e = [LatencyExperiment(1),
-         LatencyExperiment(8),
-         LatencyExperiment(64)]
+    e = [ LatencyExperiment(2**i) for i in range(9) ]
     run(e)
 
 def throughput():
