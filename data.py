@@ -40,3 +40,21 @@ def throughput(csv_fname, warmup=0.0):
     times = read_times(csv_fname)
     return find_throughput(times, warmup)
 
+def percentiles(arr):
+    arr.sort()
+    percent_ind = len(arr)/100
+    print "(ms)", "1%:", arr[percent_ind], "5%:", arr[5 * percent_ind], "50%", arr[len(arr) / 2],\
+    "95%:", arr[len(arr) - 5 * percent_ind], "99%", arr[len(arr) - percent_ind]
+
+def percentile_csv(fname):
+    times = []
+    with open(fname, 'r') as csvfile:
+        reader = csv.reader(csvfile)
+        for row in reader:
+           times.extend([ int(t) / 1000000 for t in row ])
+
+
+    # take out warmup/times they might not all be running
+    start = len(times) / 4
+    end = 8 * len(times) / 10
+    percentiles(times[start:end])
