@@ -16,7 +16,7 @@ from mininet.cli import CLI
 FLOODLIGHT_PATH = "/vagrant/floodlight"
 PRONGHORN_PATH = "/vagrant/pronghorn"
 PRONGHORN_BUILD_DIR = PRONGHORN_PATH + "/src/experiments/pronghorn/build"
-PAPER_DATA = "/vagrant/sigcomm2014-pronghorn/fig/data"
+PAPER_DATA = "/vagrant/sigcomm2014-pronghorn-data/data"
 
 def set_rtt(t_ms):
     """Sets RTT between switches and controller.
@@ -79,38 +79,38 @@ class Experiment:
             return subprocess.check_output(task)
 
 class LatencyExperiment(Experiment):
-    def __init__(self, rtt):
+    def __init__(self, rtt, threads=1):
         topo = FlatTopo(switches=1)
-        filename_flag = "-Doutput_filename=%s/latency_no_contention/%d.csv" % (PAPER_DATA, rtt * 1000)
-        Experiment.__init__(self, topo, "NoContentionLatency", rtt, [filename_flag])
+        filename_flag = "-Doutput_filename=%s/latency_no_contention/%d-%d.csv" % (PAPER_DATA, rtt * 1000, threads)
+        flags = [filename_flag]
+        flags.append("-Dlatency_num_threads=%d" % threads)
+        Experiment.__init__(self, topo, "SingleControllerLatency", rtt, )
 
 
 class ThroughputExperiment(Experiment):
-    def __init__(self, switches):
-        filename_flag = "-Doutput_filename=%s/throughput_no_contention/%d.csv" % (PAPER_DATA, switches)
-        Experiment.__init__(self, FlatTopo(switches), "NoContentionThroughput", 0, [filename_flag])
+    def __init__(self, switches, task="NoContentionThroughput"):
+        # include ms since epoch time in fname.
+        # DO NOT create two tests with same task and #switches at same time, because this is timestamp of
+        # creation, not execution.
+        filename_flag = "-Doutput_filename=%s/%s/%d-%d.csv" % (PAPER_DATA, task, switches, int(time.time() * 1000))
+        Experiment.__init__(self, FlatTopo(switches), task, 0, [filename_flag])
 
 
-
-#experiments = [Experiment(FlatTopo(switches=1), "Ordering")]
-#experiments = [Experiment(FlatTopo(switches=10), "NoContentionThroughput")]
-               #Experiment(FlatTopo(switches=10), "NoContentionThroughput"),
-               #Experiment(FlatTopo(switches=30), "NoContentionThroughput"),
-               #Experiment(FlatTopo(switches=50), "NoContentionThroughput")]
-
-def run(experiments):
-    for e in experiments:
-        print e.run()
 
 def latency():
-    e = [ LatencyExperiment(2**i) for i in range(9) ]
-    run(e)
-
-def throughput():
-    e = [ThroughputExperiment(1),
-         ThroughputExperiment(16)]
-    run(e)
+    for rtt in (0,2):
+        for threads in  (1, 2, 10, 50):
+            LatencyExperiment(rtt, threads).run()
 
 
-#latency()
-throughput()
+THROUGHPUT_INPUTS = (1,5, 10, 20, 50)
+def all_throughput():
+    for i in THROUGHPUT_INPUTS:
+        for task in ("NoContentionThroughput", "ContentionThroughput",
+                     "NoContentionCoarseLockingThroughput",
+                     "ContentionCoarseLockingThroughput"):
+            print ThroughputExperiment(i, task).run()
+
+latency()
+for i in range(5):
+    all_throughput()
