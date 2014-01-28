@@ -5,8 +5,6 @@ import time
 
 import docker
 
-import data
-
 #from net-test import FlatTopo
 from mininet.net import Mininet
 from mininet.node import OVSSwitch, Controller, RemoteController
@@ -64,7 +62,10 @@ class FloodlightContainer:
         self.client.start(self.did, port_bindings={OPENFLOW_PORT: None,
                                                    REST_PORT: None})
         containers = [c for c in self.client.containers() if c["Id"] == self.did]
-        assert(len(containers) == 1)
+        if len(containers) != 1:
+            print containers
+            print len(containers)
+            assert(False)
         c = containers[0]
         for port in c["Ports"]:
             if port["PrivatePort"] == OPENFLOW_PORT:
@@ -116,10 +117,10 @@ class Experiment:
     def run(self):
         with setup(self) as s:
             task = ["ant", "-f", PRONGHORN_BUILD_DIR + "/build.xml", "run_" + self.task]
-            task.append("-Drest_ports=" + str(s.containers[0].rest_port))#",".join([ str(c.rest_port) for c in s.containers]))
+            task.append("-Drest_ports=" + ",".join([ str(c.rest_port) for c in s.containers]))
             task.extend(self.ant_extras)
             print task
-            return subprocess.check_output(task)
+            return subprocess.call(task)
 
 class LatencyExperiment(Experiment):
     def __init__(self, rtt, threads=1):
@@ -137,6 +138,10 @@ class ThroughputExperiment(Experiment):
         # creation, not execution.
         filename_flag = "-Doutput_filename=%s/%s/%d-%d.csv" % (PAPER_DATA, task, switches, int(time.time() * 1000))
         Experiment.__init__(self, FlatTopo(switches), task, 0, [filename_flag], num_controllers=num_controllers)
+
+class FairnessExperiment(Experiment):
+    def __init__(self):
+        Experiment.__init__(self, FlatTopo(2), "Fairness", 0, num_controllers=2)
 
 
 
@@ -156,7 +161,7 @@ def all_throughput():
 
 #latency()
 #print LatencyExperiment(1, 1).run()
-print ThroughputExperiment(2, num_controllers=2).run()
+#print ThroughputExperiment(2, num_controllers=2).run()
 #for i in range(5):
 #    all_throughput()
-
+print FairnessExperiment().run()
