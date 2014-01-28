@@ -140,8 +140,10 @@ class ThroughputExperiment(Experiment):
         Experiment.__init__(self, FlatTopo(switches), task, 0, [filename_flag], num_controllers=num_controllers)
 
 class FairnessExperiment(Experiment):
-    def __init__(self):
-        Experiment.__init__(self, FlatTopo(2), "Fairness", 0, num_controllers=2)
+    def __init__(self, wound_wait=False):
+        flags = ["-Dwound_wait=" + str(wound_wait).lower()]
+        Experiment.__init__(self, FlatTopo(2), "Fairness", 0,
+                            ant_extras=flags, num_controllers=2)
 
 
 
@@ -164,4 +166,4 @@ def all_throughput():
 #print ThroughputExperiment(2, num_controllers=2).run()
 #for i in range(5):
 #    all_throughput()
-print FairnessExperiment().run()
+print FairnessExperiment(True).run()
