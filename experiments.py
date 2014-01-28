@@ -1,4 +1,4 @@
-#!/usr/bin/python
+˘#!/usr/bin/python
 
 import subprocess
 import time
@@ -141,9 +141,19 @@ class ThroughputExperiment(Experiment):
 
 class FairnessExperiment(Experiment):
     def __init__(self, wound_wait=False):
-        flags = ["-Dwound_wait=" + str(wound_wait).lower()]
-        Experiment.__init__(self, FlatTopo(2), "Fairness", 0,
+        task = "Fairness"
+        flags = ["-Dwound_wait=" + str(wound_wait).lower(),
+                 "-Doutput_filename=%s/%s/%s.csv" % (PAPER_DATA, task, str(wound_wait).lower())]
+        Experiment.__init__(self, FlatTopo(2), task, 0,
                             ant_extras=flags, num_controllers=2)
+
+class ErrorExperiment(Experiment):
+    def __init__(self, switches, error_percent):
+        task = "Error"
+        flags = ["-Derror_num_ops_to_run_per_experiment=100",
+                 "-Derror_failure_prob=%f" % (float(error_percent)/100),
+                 "-Doutput_filename=%s/%s/%d-%d" % (PAPER_DATA, task, error_percent, switches)]
+        Experiment.__init__(self, FlatTopo(switches), task, 0, ant_extras=flags)
 
 
 
@@ -152,8 +162,17 @@ def latency():
         for threads in  (1, 2, 10, 50):
             LatencyExperiment(rtt, threads).run()
 
+def fairness():
+    for wound_wait in (True, False):
+        print FairnessExperiment(wound_wait).run()
 
-THROUGHPUT_INPUTS = (1,5, 10, 20, 50)
+def error():
+    for err in (10, 50, 90):
+        for switches in (1, 2, 4, 16):
+            ErrorExperiment(switches, err).run()
+
+
+THROUGHPUT_INPUTS = (1,5, 10, 20, 60)
 def all_throughput():
     for i in THROUGHPUT_INPUTS:
         for task in ("NoContentionThroughput", "ContentionThroughput",
@@ -161,9 +180,9 @@ def all_throughput():
                      "ContentionCoarseLockingThroughput"):
             print ThroughputExperiment(i, task).run()
 
-#latency()
-#print LatencyExperiment(1, 1).run()
-#print ThroughputExperiment(2, num_controllers=2).run()
-#for i in range(5):
-#    all_throughput()
-print FairnessExperiment(True).run()
+
+latency()
+all_throughput()
+for i in range(4):
+    all_throughput()
+fairness()
