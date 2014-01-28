@@ -48,7 +48,11 @@ def set_rtt(t_ms):
 
 def data_dir(task):
     path = "%s/%s-%d/" % (PAPER_DATA, task, START)
-    os.mkdir(path)
+    try:
+        os.mkdir(path)
+    except OSError:
+        # exists
+        None
     return path
 
 def data_fname_flag(task, basename):
