@@ -1,7 +1,10 @@
-˘#!/usr/bin/python
+#!/usr/bin/python
 
+import os
 import subprocess
+import sys
 import time
+
 
 import docker
 
@@ -25,6 +28,8 @@ DOCKER = docker.Client(base_url='unix://var/run/docker.sock',
                        version='1.6',
                        timeout=10)
 
+START = int(time.time())
+
 def set_rtt(t_ms):
     """Sets RTT between switches and controller.
     Exception on failure"""
@@ -39,6 +44,15 @@ def set_rtt(t_ms):
                            "ip", "parent", "1:0", "prio", "3", "u32", "match",
                            "ip", "dst", "127.0.0.2/32", "flowid", "1:3"])
 
+
+
+def data_dir(task):
+    path = "%s/%s-%d/" % (PAPER_DATA, task, START)
+    os.mkdir(path)
+    return path
+
+def data_fname_flag(task, basename):
+    return "-Doutput_filename=%s/%s.csv" % (data_dir(task), basename)
 
 
 class MultiSwitch( OVSSwitch ):
@@ -120,15 +134,17 @@ class Experiment:
             task.append("-Drest_ports=" + ",".join([ str(c.rest_port) for c in s.containers]))
             task.extend(self.ant_extras)
             print task
+            sys.stdout.flush()
             return subprocess.call(task)
 
 class LatencyExperiment(Experiment):
     def __init__(self, rtt, threads=1):
         topo = FlatTopo(switches=1)
-        filename_flag = "-Doutput_filename=%s/latency_no_contention/%d-%d.csv" % (PAPER_DATA, rtt * 1000, threads)
+        task = "SingleControllerLatency"
+        filename_flag = data_fname_flag(task, "%d-%d" % (rtt * 1000, threads))
         flags = [filename_flag]
         flags.append("-Dlatency_num_threads=%d" % threads)
-        Experiment.__init__(self, topo, "SingleControllerLatency", rtt, )
+        Experiment.__init__(self, topo, task, rtt, )
 
 
 class ThroughputExperiment(Experiment):
@@ -136,14 +152,14 @@ class ThroughputExperiment(Experiment):
         # include ms since epoch time in fname.
         # DO NOT create two tests with same task and #switches at same time, because this is timestamp of
         # creation, not execution.
-        filename_flag = "-Doutput_filename=%s/%s/%d-%d.csv" % (PAPER_DATA, task, switches, int(time.time() * 1000))
+        filename_flag = data_fname_flag(task, "%d-%d"  % (switches, int(time.time() * 1000)))
         Experiment.__init__(self, FlatTopo(switches), task, 0, [filename_flag], num_controllers=num_controllers)
 
 class FairnessExperiment(Experiment):
     def __init__(self, wound_wait=False):
         task = "Fairness"
         flags = ["-Dwound_wait=" + str(wound_wait).lower(),
-                 "-Doutput_filename=%s/%s/%s.csv" % (PAPER_DATA, task, str(wound_wait).lower())]
+                 data_fname_flag(task, str(wound_wait).lower())]
         Experiment.__init__(self, FlatTopo(2), task, 0,
                             ant_extras=flags, num_controllers=2)
 
@@ -152,7 +168,7 @@ class ErrorExperiment(Experiment):
         task = "Error"
         flags = ["-Derror_num_ops_to_run_per_experiment=100",
                  "-Derror_failure_prob=%f" % (float(error_percent)/100),
-                 "-Doutput_filename=%s/%s/%d-%d" % (PAPER_DATA, task, error_percent, switches)]
+                 data_fname_flag(task, "%d-%d" % (error_percent, switches))]
         Experiment.__init__(self, FlatTopo(switches), task, 0, ant_extras=flags)
 
 
@@ -181,8 +197,10 @@ def all_throughput():
             print ThroughputExperiment(i, task).run()
 
 
-latency()
-all_throughput()
-for i in range(4):
-    all_throughput()
-fairness()
+#latency()
+#fairness()
+#for i in range(4):
+#    all_throughput()
+#error()
+#all_throughput()
+#ErrorExperiment(50, 16).run()
