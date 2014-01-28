@@ -3,6 +3,8 @@
 import subprocess
 import time
 
+import docker
+
 import data
 
 #from net-test import FlatTopo
@@ -17,6 +19,13 @@ FLOODLIGHT_PATH = "/vagrant/floodlight"
 PRONGHORN_PATH = "/vagrant/pronghorn"
 PRONGHORN_BUILD_DIR = PRONGHORN_PATH + "/src/experiments/pronghorn/build"
 PAPER_DATA = "/vagrant/sigcomm2014-pronghorn-data/data"
+
+OPENFLOW_PORT=6633
+REST_PORT=8080
+
+DOCKER = docker.Client(base_url='unix://var/run/docker.sock',
+                       version='1.6',
+                       timeout=10)
 
 def set_rtt(t_ms):
     """Sets RTT between switches and controller.
@@ -34,12 +43,37 @@ def set_rtt(t_ms):
 
 
 
+class MultiSwitch( OVSSwitch ):
+    "Custom Switch() subclass that connects to different controllers"
+    def start( self, controllers ):
+        my_num = int(self.name[1:])-1
+        return OVSSwitch.start( self, [ controllers[my_num % len(controllers)] ] )
+
 class FlatTopo(Topo):
     "N switches, no connections, no hosts"
     def __init__(self, switches=5, **opts):
         Topo.__init__(self, **opts)
         for i in range(switches):
             switch = self.addSwitch("s%d" % (i + 1))
+
+IMAGE = "jackowayed/floodlight"
+class FloodlightContainer:
+    def __init__(self, docker_client):
+        self.client = docker_client
+        self.did = self.client.create_container(IMAGE, ports=[OPENFLOW_PORT, REST_PORT])["Id"]
+        self.client.start(self.did, port_bindings={OPENFLOW_PORT: None,
+                                                   REST_PORT: None})
+        containers = [c for c in self.client.containers() if c["Id"] == self.did]
+        assert(len(containers) == 1)
+        c = containers[0]
+        for port in c["Ports"]:
+            if port["PrivatePort"] == OPENFLOW_PORT:
+                self.of_port = port["PublicPort"]
+            if port["PrivatePort"] == REST_PORT:
+                self.rest_port = port["PublicPort"]
+
+    def kill(self):
+        self.client.kill(self.did)
 
 
 class setup():
@@ -48,32 +82,41 @@ class setup():
 
     def __enter__(self):
         set_rtt(self.exp.rtt)
-        # Run Floodlight
-        self.floodProc = subprocess.Popen(["java", "-jar", FLOODLIGHT_PATH + "/target/floodlight.jar"], stdin=subprocess.PIPE)
-        time.sleep(10)
+        self.containers = []
         # Run Mininet
-        self.net = Mininet(topo=self.exp.topology, controller=lambda name: RemoteController(name, ip='127.0.0.2'))
+        self.net = Mininet(topo=self.exp.topology, build=False, switch=MultiSwitch)
+
+        # Run floodlights
+        for i in range(self.exp.num_controllers):
+            c = FloodlightContainer(DOCKER)
+            self.containers.append(c)
+            self.net.addController(RemoteController("c%d" % i, ip="127.0.0.2", port=c.of_port))
+        time.sleep(5)
+        self.net.build()
+        time.sleep(5)
         self.net.start()
+        return self
 
 
     def __exit__(self, type, value, traceback):
         set_rtt(0)
         self.net.stop()
-        self.floodProc.kill()
-        
-    
+        for c in self.containers:
+            c.kill()
 
 
 class Experiment:
-    def __init__(self, topology, task, rtt=0, ant_extras=()):
+    def __init__(self, topology, task, rtt=0, ant_extras=(), num_controllers=1):
         self.topology = topology
         self.task = task
         self.rtt = rtt
         self.ant_extras=ant_extras
+        self.num_controllers = num_controllers
 
     def run(self):
-        with setup(self):
+        with setup(self) as s:
             task = ["ant", "-f", PRONGHORN_BUILD_DIR + "/build.xml", "run_" + self.task]
+            task.append("-Drest_ports=" + str(s.containers[0].rest_port))#",".join([ str(c.rest_port) for c in s.containers]))
             task.extend(self.ant_extras)
             print task
             return subprocess.check_output(task)
@@ -88,12 +131,12 @@ class LatencyExperiment(Experiment):
 
 
 class ThroughputExperiment(Experiment):
-    def __init__(self, switches, task="NoContentionThroughput"):
+    def __init__(self, switches, task="NoContentionThroughput", num_controllers=1):
         # include ms since epoch time in fname.
         # DO NOT create two tests with same task and #switches at same time, because this is timestamp of
         # creation, not execution.
         filename_flag = "-Doutput_filename=%s/%s/%d-%d.csv" % (PAPER_DATA, task, switches, int(time.time() * 1000))
-        Experiment.__init__(self, FlatTopo(switches), task, 0, [filename_flag])
+        Experiment.__init__(self, FlatTopo(switches), task, 0, [filename_flag], num_controllers=num_controllers)
 
 
 
@@ -111,6 +154,9 @@ def all_throughput():
                      "ContentionCoarseLockingThroughput"):
             print ThroughputExperiment(i, task).run()
 
-latency()
-for i in range(5):
-    all_throughput()
+#latency()
+#print LatencyExperiment(1, 1).run()
+print ThroughputExperiment(2, num_controllers=2).run()
+#for i in range(5):
+#    all_throughput()
+
