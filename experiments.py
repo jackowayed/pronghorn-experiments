@@ -148,7 +148,7 @@ class LatencyExperiment(Experiment):
         filename_flag = data_fname_flag(task, "%d-%d" % (rtt * 1000, threads))
         flags = [filename_flag]
         flags.append("-Dlatency_num_threads=%d" % threads)
-        Experiment.__init__(self, topo, task, rtt, )
+        Experiment.__init__(self, topo, task, rtt, flags)
 
 
 class ThroughputExperiment(Experiment):
@@ -201,7 +201,7 @@ def all_throughput():
             print ThroughputExperiment(i, task).run()
 
 
-#latency()
+latency()
 #fairness()
 #for i in range(4):
 #    all_throughput()
