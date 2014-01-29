@@ -16,10 +16,14 @@ from mininet.topolib import TreeTopo
 from mininet.log import setLogLevel
 from mininet.cli import CLI
 
-FLOODLIGHT_PATH = "/vagrant/floodlight"
-PRONGHORN_PATH = "/vagrant/pronghorn"
+
+with open(os.path.dirname(os.path.realpath(__file__)) + "/basedir.txt", 'r') as f:
+    BASE_PATH = f.read().strip()
+
+FLOODLIGHT_PATH = os.path.join(BASE_PATH, "floodlight")
+PRONGHORN_PATH = os.path.join(BASE_PATH, "pronghorn")
 PRONGHORN_BUILD_DIR = PRONGHORN_PATH + "/src/experiments/pronghorn/build"
-PAPER_DATA = "/vagrant/sigcomm2014-pronghorn-data/data"
+PAPER_DATA = os.path.join(BASE_PATH, "data")
 
 OPENFLOW_PORT=6633
 REST_PORT=8080
@@ -47,7 +51,7 @@ def set_rtt(t_ms):
 
 
 def data_dir(task):
-    path = "%s/%s-%d/" % (PAPER_DATA, task, START)
+    path = "%s/%s-%d" % (PAPER_DATA, task, START)
     try:
         os.mkdir(path)
     except OSError:
