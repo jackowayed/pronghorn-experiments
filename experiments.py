@@ -214,9 +214,9 @@ def error():
 THROUGHPUT_INPUTS = (1,5, 10, 20, 60)
 def all_throughput():
     for i in THROUGHPUT_INPUTS:
-        for task in ("NoContentionThroughput", "ContentionThroughput",
-                     "NoContentionCoarseLockingThroughput",
-                     "ContentionCoarseLockingThroughput"):
+        for task in ["NoContentionThroughput", "ContentionThroughput"]:
+                     #"NoContentionCoarseLockingThroughput",
+                     #"ContentionCoarseLockingThroughput"):
             print ThroughputExperiment(i, task).run()
 
 
