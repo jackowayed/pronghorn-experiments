@@ -13,6 +13,8 @@ def git_pull(git_dir):
     p.wait()
     p = subprocess.Popen(["git", "reset", "--hard", "origin/master"], cwd=git_dir)
     p.wait()
+    p = subprocess.Popen(["git", "submodule", "update", "--init", "--recursive"], cwd=git_dir)
+    p.wait()
     
 
 def update():
