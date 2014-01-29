@@ -9,21 +9,25 @@ FLOODLIGHT_REST_PORT = 8080
 LISTENING_FOR_PARENT_ON_PORT = 3939
 PEM_FILENAME = 'sergeant3.pem'
 
+EXPERIMENT_BUILD_PATH = 'pronghorn/src/experiments/pronghorn/build'
+
 # wait 5 seconds between starting a sergeant instance and its parent.
 WAIT_TIME_BETWEEN_SERGEANT_STARTS = 5 
 # used as a general barrier when one operation depends on another
 GENERAL_WAIT_TIME = 20
 
-# Example usage
+# # Example usage
 # def run_test_setup():
 #     hosts = ['ec2-54-184-51-225.us-west-2.compute.amazonaws.com']
-#     start mininet
+#     # start mininet
 #     start_mininet_and_floodlight(hosts,5)
-#     stop mininet and floodlight
-#     stop_mininet_and_floodlight(hosts)
+#     # run dumb latency test
+#     dumb_latency_test(hosts)
+#     # stop mininet and floodlight
+#     # stop_mininet_and_floodlight(hosts)
 
-def run_test_setup():
-    pass
+# def run_test_setup():
+#     pass
 
 def start_mininet_and_floodlight(hosts,num_switches):
     # compile floodlight on all hosts
@@ -49,8 +53,25 @@ def start_mininet_and_floodlight(hosts,num_switches):
         issue_ssh(host,ssh_cmd)
         
     time.sleep(GENERAL_WAIT_TIME)
-        
 
+
+    
+def dumb_latency_test(hosts):
+    '''
+    Just run single controller latency test on each host
+    '''
+    output_filename = 'latency_out.csv'
+    ssh_cmd = (
+        'cd ' + EXPERIMENT_BUILD_PATH + '; ' + 
+        'sudo ant run_SingleControllerLatency -Dlatency_num_ops=100 -Doutput_filename=' +
+        output_filename)
+    for host in hosts:
+        issue_ssh(host,ssh_cmd)
+
+    time.sleep(GENERAL_WAIT_TIME)
+
+        
+    
 def issue_ssh(host,ssh_cmd_str):
     '''
     @param {String} host --- name of host we're ssh-ing to 
@@ -115,11 +136,11 @@ def stop_sergeants(hosts):
 def stop_mininet_and_floodlight(hosts):
     for host in hosts:
         # kill mininet
-        cmd_str = 'pkill -f mn'
+        cmd_str = 'sudo pkill -f mn'
         issue_ssh(host,cmd_str)        
         
         # kill floodlight
-        cmd_str = 'pkill -f floodlight'
+        cmd_str = 'sudo pkill -f floodlight'
         issue_ssh(host,cmd_str)        
 
         
