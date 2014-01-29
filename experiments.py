@@ -34,6 +34,9 @@ DOCKER = docker.Client(base_url='unix://var/run/docker.sock',
 
 START = int(time.time())
 
+def reset_start():
+    START = int(time.time())
+
 def set_rtt(t_ms):
     """Sets RTT between switches and controller.
     Exception on failure"""
@@ -147,7 +150,7 @@ class Experiment:
             length = len(key)
             if s[:length] == key:
                 fname = s[length:]
-                dirname = os.path.basename(fname)
+                dirname = os.path.dirname(fname)
                 try:
                     os.mkdir(dirname)
                 except OSError:
