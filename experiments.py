@@ -160,7 +160,7 @@ class ThroughputExperiment(Experiment):
         # include ms since epoch time in fname.
         # DO NOT create two tests with same task and #switches at same time, because this is timestamp of
         # creation, not execution.
-        filename_flag = data_fname_flag(task, "%d-%d"  % (switches, int(time.time() * 1000)))
+        filename_flag = data_fname_flag(task, "%d"  % switches)
         Experiment.__init__(self, FlatTopo(switches), task, 0, [filename_flag], num_controllers=num_controllers)
 
 class FairnessExperiment(Experiment):
@@ -168,7 +168,7 @@ class FairnessExperiment(Experiment):
         task = "Fairness"
         flags = ["-Dwound_wait=" + str(wound_wait).lower(),
                  "-Dfairness_num_ops=" + str(ops),
-                 data_fname_flag(task, str(wound_wait).lower())]
+                 data_fname_flag(task, "%s-%d" % (str(wound_wait).lower(), ops))]
         Experiment.__init__(self, FlatTopo(2), task, 0,
                             ant_extras=flags, num_controllers=2)
 
