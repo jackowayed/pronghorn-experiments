@@ -220,5 +220,40 @@ def all_throughput():
             print ThroughputExperiment(i, task).run()
 
 
-        
 
+
+## Distributed tests
+
+class DistributedExperiment():
+    def __init__(self, constructor, params, hosts, local_exp):
+        """calls constructor on each elem of params to make an experiment
+        for each host"""
+        self.experiments = [ constructor(p) for p in params ]
+        self.local = local_exp
+
+    def run():
+        # launch all other experiments in proper order
+        self.remotes = []
+        for i in len(self.experiments):
+            e = self.experiments[i]
+            self.remotes.append(subprocess.Popen(['fab', "experiment:" + serialize_experiment(e) + ",hosts=" + hosts[i]]))
+            time.sleep(60)
+                
+        # run self
+        local_exp.run()
+        # tear down others
+        # get data
+
+
+class MultiLatency(Experiment):
+    def __init__(self, child_hosts=[], root=False):
+        task = "MultiControllerLatency"
+        base_port = 30305
+        flags = []
+        flags.append('-Dlatency_port_to_listen_for_connections_on=%i'%base_port)
+        if !root:
+            flags.append("-Dlatency_num_ops=0")
+        if len(child_hosts) > 0:
+            flags.append('-Dlatency_children_to_contact_host_ports=%s:30305' % child_hosts[0])
+        
+        
