@@ -145,6 +145,20 @@ class Experiment:
             sys.stdout.flush()
             return subprocess.call(task)
 
+    def ensure_output_dir(self):
+        for s in self.ant_extras:
+            key = "-Doutput_filename="
+            length = len(key)
+            if s[:length] == key:
+                fname = s[length:]
+                dirname = os.path.basename(fname)
+                try:
+                    os.mkdir(dirname)
+                except OSError:
+                    # exists
+                    None
+
+
 class LatencyExperiment(Experiment):
     def __init__(self, rtt, threads=1):
         topo = FlatTopo(switches=1)
@@ -183,7 +197,7 @@ class ErrorExperiment(Experiment):
 
 
 def latency():
-    for rtt in (0,2):
+    for rtt in (0,2,4,8):
         for threads in  (1, 2, 10, 50):
             LatencyExperiment(rtt, threads).run()
 
