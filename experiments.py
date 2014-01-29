@@ -164,9 +164,10 @@ class ThroughputExperiment(Experiment):
         Experiment.__init__(self, FlatTopo(switches), task, 0, [filename_flag], num_controllers=num_controllers)
 
 class FairnessExperiment(Experiment):
-    def __init__(self, wound_wait=False):
+    def __init__(self, wound_wait=False, ops=100):
         task = "Fairness"
         flags = ["-Dwound_wait=" + str(wound_wait).lower(),
+                 "-Dfairness_num_ops=" + str(ops),
                  data_fname_flag(task, str(wound_wait).lower())]
         Experiment.__init__(self, FlatTopo(2), task, 0,
                             ant_extras=flags, num_controllers=2)
@@ -187,8 +188,9 @@ def latency():
             LatencyExperiment(rtt, threads).run()
 
 def fairness():
-    for wound_wait in (True, False):
-        print FairnessExperiment(wound_wait).run()
+    for num_ops in [100, 1000,2000, 5000,10000]:
+        for wound_wait in (True, False):
+            print FairnessExperiment(wound_wait, num_ops).run()
 
 def error():
     for err in (10, 50, 90):
@@ -205,8 +207,8 @@ def all_throughput():
             print ThroughputExperiment(i, task).run()
 
 
-latency()
-#fairness()
+#latency()
+fairness()
 #for i in range(4):
 #    all_throughput()
 #error()
