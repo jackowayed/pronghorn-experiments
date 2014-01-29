@@ -52,11 +52,6 @@ def set_rtt(t_ms):
 
 def data_dir(task):
     path = "%s/%s-%d" % (PAPER_DATA, task, START)
-    try:
-        os.mkdir(path)
-    except OSError:
-        # exists
-        None
     return path
 
 def data_fname_flag(task, basename):
@@ -105,6 +100,7 @@ class setup():
 
     def __enter__(self):
         set_rtt(self.exp.rtt)
+        self.exp.ensure_output_dir()
         self.containers = []
         # Run Mininet
         self.net = Mininet(topo=self.exp.topology, build=False, switch=MultiSwitch)
@@ -221,10 +217,5 @@ def all_throughput():
             print ThroughputExperiment(i, task).run()
 
 
-#latency()
-fairness()
-#for i in range(4):
-#    all_throughput()
-#error()
-#all_throughput()
-#ErrorExperiment(50, 16).run()
+        
+

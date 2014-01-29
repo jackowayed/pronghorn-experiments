@@ -24,7 +24,6 @@ def update():
 
 def experiment():
     exp = deserialize_experiment(sys.argv[2])
-    exp.ensure_output_dir()
     exp.run()
 
 
