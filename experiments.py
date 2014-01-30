@@ -205,7 +205,7 @@ class ErrorExperiment(Experiment):
 
 def latency():
     for rtt in (0,2,4,8):
-        for threads in  (1, 2, 4, 8, 10):
+        for threads in  (1, 2, 4, 6, 8, 10):
             LatencyExperiment(rtt, threads).run()
 
 def fairness():
