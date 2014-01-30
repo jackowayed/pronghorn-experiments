@@ -76,19 +76,21 @@ class FlatTopo(Topo):
 
 IMAGE = "jackowayed/floodlight"
 class FloodlightContainer:
-    def launch_container(self):
-        self.did = self.client.create_container(IMAGE, ports=[OPENFLOW_PORT, REST_PORT])["Id"]
-        self.client.start(self.did, port_bindings={OPENFLOW_PORT: None,
-                                                   REST_PORT: None})
+    def launch_container(self, ofbind=None, restbind=None, num_retries=20):
+        try:
+            self.did = self.client.create_container(IMAGE, ports=[OPENFLOW_PORT, REST_PORT])["Id"]
+            self.client.start(self.did, port_bindings={OPENFLOW_PORT: None,
+                                                       REST_PORT: None})
+        except docker.client.APIError as e:
+            print e
+            if num_retries > 0:
+                self.launch_container(random.randint(10000,20000), random.randint(10000,20000), num_retries-1)
+            else:
+                raise e
 
     def __init__(self, docker_client):
         self.client = docker_client
-        try:
-            self.launch_container()
-        except docker.client.APIError as e:
-            print e
-            # one more try
-            self.launch_container()
+        self.launch_container()
         containers = [c for c in self.client.containers() if c["Id"] == self.did]
         if len(containers) != 1:
             print containers
