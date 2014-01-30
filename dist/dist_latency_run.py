@@ -38,10 +38,13 @@ LATENCY_TEST_OUTPUT_FILENAME = 'dist_latency_test2.csv'
 LATENCY_NUM_OPS = 1000
 DIST_LATENCY_TEST_NAME = 'run_MultiControllerLatency'
 
-THROUGHPUT_TEST_OUTPUT_FILENAME = 'chained_throughput_output.csv'
+
 DIST_THROUGHPUT_TEST_NAME = 'run_MultiControllerNoContentionThroughput'
 THROUGHPUT_NUM_OPS = 5000
-
+NUM_SWITCHES_PER_CONTROLLER = 1
+THROUGHPUT_TEST_OUTPUT_FILENAME = (
+    'chained_throughput_output_%s_%s.csv' %
+    (THROUGHPUT_NUM_OPS, NUM_SWITCHES_PER_CONTROLLER))
 
 
 def run_test_setup():
@@ -53,7 +56,8 @@ def run_test_setup():
     # run_latency_test(hosts,'latency_results.csv')
     # stop_sergeants(hosts,DIST_LATENCY_TEST_NAME)
     
-    run_throughput_test(hosts,5,'throughput_results.csv')
+    run_throughput_test(hosts,NUM_SWITCHES_PER_CONTROLLER,'throughput_results.csv')
+    
     # stop_mininet_and_floodlight(hosts)
     # stop_sergeants(hosts,DIST_THROUGHPUT_TEST_NAME)
     print '\nWaiting a bit\n'
@@ -70,7 +74,7 @@ def chmod_all_pronghorn (hosts):
 
 def run_throughput_test(hosts,switches_per_controller,local_output_file):
     print '\nchmoding all\n'
-    chmod_all_pronghorn (hosts)
+    # chmod_all_pronghorn (hosts)
     
     # actually bring up mininet and floodlight on each host
     start_mininet_and_floodlight(hosts,switches_per_controller)
