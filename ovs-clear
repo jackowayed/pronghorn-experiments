@@ -1,0 +1,7 @@
+#!/usr/bin/env python
+
+import subprocess
+
+switches = subprocess.check_output(["ovs-vsctl", "list-br"])
+for sw in iter(switches.splitlines()):
+    subprocess.check_output(["ovs-vsctl", "del-br", sw])
