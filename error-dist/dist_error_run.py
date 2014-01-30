@@ -15,9 +15,9 @@ EXPERIMENT_BUILD_PATH = 'pronghorn/src/experiments/pronghorn/build'
 EC2_HOSTS = []
 
 # wait 5 seconds between starting a sergeant instance and its parent.
-WAIT_TIME_BETWEEN_SERGEANT_STARTS = 20
+WAIT_TIME_BETWEEN_SERGEANT_STARTS = 3
 # used as a general barrier when one operation depends on another
-GENERAL_WAIT_TIME = 30
+GENERAL_WAIT_TIME = 20
 
 FAST_WAIT_TIME = 5
 
@@ -40,27 +40,35 @@ DIST_LATENCY_TEST_NAME = 'run_MultiControllerLatency'
 
 
 DIST_THROUGHPUT_TEST_NAME = 'run_MultiControllerNoContentionThroughput'
-THROUGHPUT_NUM_OPS = 1000
+THROUGHPUT_NUM_OPS = 5000
 NUM_SWITCHES_PER_CONTROLLER = 1
 THROUGHPUT_TEST_OUTPUT_FILENAME = (
     'chained_throughput_output_%s_%s.csv' %
     (THROUGHPUT_NUM_OPS, NUM_SWITCHES_PER_CONTROLLER))
 
 
+DIST_ERROR_TEST_NAME = 'run_MultiControllerError'
+
 def run_test_setup():
     hosts = [
-        'ec2-54-202-198-195.us-west-2.compute.amazonaws.com', # node a
-        'ec2-54-203-217-172.us-west-2.compute.amazonaws.com', 
-        'ec2-54-203-229-215.us-west-2.compute.amazonaws.com',
-        'ec2-54-244-102-62.us-west-2.compute.amazonaws.com'
-]
+        'ec2-54-203-183-238.us-west-2.compute.amazonaws.com', #node a
+        'ec2-54-203-229-201.us-west-2.compute.amazonaws.com',
+        'ec2-54-184-91-116.us-west-2.compute.amazonaws.com',
+        'ec2-54-184-56-9.us-west-2.compute.amazonaws.com']
+        
+
     # run_latency_test(hosts,'latency_results.csv')
     # stop_sergeants(hosts,DIST_LATENCY_TEST_NAME)
     
     # run_throughput_test(hosts,NUM_SWITCHES_PER_CONTROLLER,'throughput_results.csv')
+    # stop_mininet_and_floodlight(hosts)
+    # stop_sergeants(hosts,DIST_THROUGHPUT_TEST_NAME)
+
+    run_error_test(hosts,1,'error_results.csv')
+    # stop_mininet_and_floodlight(hosts)
+    # stop_sergeants(hosts,DIST_ERROR_TEST_NAME)
+
     
-    stop_mininet_and_floodlight(hosts)
-    stop_sergeants(hosts,DIST_THROUGHPUT_TEST_NAME)
     print '\nWaiting a bit\n'
     time.sleep(FAST_WAIT_TIME)
 
@@ -71,6 +79,53 @@ def chmod_all_pronghorn (hosts):
         issue_ssh(host,ssh_cmd_str)
     
 
+################ ERROR EXPERIMENT CONSTANTS #############
+ERROR_PROB = .01
+ERROR_TEST_OUTPUT_FILENAME = 'error_output_%f.csv' % ERROR_PROB
+ERROR_NUM_OPS = 100
+DIST_ERROR_TEST_NAME = 'run_MultiControllerError'
+
+
+def run_error_test(hosts,switches_per_controller,local_output_file):
+    # actually bring up mininet and floodlight on each host
+    start_mininet_and_floodlight(hosts,switches_per_controller)
+
+    arguments = (
+        ' -Derror_port_to_listen_for_connections_on=%i ' %
+        LISTENING_FOR_PARENT_ON_PORT)
+    arguments += ' -Doutput_filename=%s ' % ERROR_TEST_OUTPUT_FILENAME
+    
+    # tell head nodes to collect data and collect a particular number
+    # of ops.
+    head_arguments = ' -Derror_num_ops=%i ' % ERROR_NUM_OPS
+    head_arguments += arguments
+    
+
+    # tell non-head nodes to do nothing
+    non_head_arguments = ' -Derror_num_ops=0 '
+    non_head_arguments += arguments
+
+    # parents can connect to their children on this ip/port
+    point_at_child_arg_name = ' -Derror_children_to_contact_host_ports'
+
+    # start the latency tests in a chained topology
+    print '\nCreating chained sergeants\n'
+    start_sergeants_chained(
+        hosts,DIST_ERROR_TEST_NAME,head_arguments,non_head_arguments,
+        point_at_child_arg_name)
+    
+    time.sleep(GENERAL_WAIT_TIME*10)
+
+    print '\nCollecting data\n'
+    # data_filename_on_server = (
+    #     EXPERIMENT_BUILD_PATH + '/classes/' + THROUGHPUT_TEST_OUTPUT_FILENAME)
+    # collect_data(
+    #     hosts[0],data_filename_on_server, local_output_file)
+
+
+
+        
+        
 ################ THROUGHPUT EXPERIMENT CONSTANTS #############
 
 def run_throughput_test(hosts,switches_per_controller,local_output_file):
@@ -79,7 +134,7 @@ def run_throughput_test(hosts,switches_per_controller,local_output_file):
     
     # actually bring up mininet and floodlight on each host
     start_mininet_and_floodlight(hosts,switches_per_controller)
-    
+
     arguments = (
         ' -Dthroughput_port_to_listen_for_connections_on=%i ' %
         LISTENING_FOR_PARENT_ON_PORT)
@@ -240,7 +295,7 @@ def start_mininet_and_floodlight(hosts,num_switches):
     for host in hosts:
         issue_ssh(host,ssh_cmd)
 
-    time.sleep(5*GENERAL_WAIT_TIME)
+    time.sleep(GENERAL_WAIT_TIME)
 
     
     # start floodlight on all hosts
