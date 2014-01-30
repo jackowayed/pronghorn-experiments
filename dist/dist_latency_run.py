@@ -15,7 +15,7 @@ EXPERIMENT_BUILD_PATH = 'pronghorn/src/experiments/pronghorn/build'
 EC2_HOSTS = []
 
 # wait 5 seconds between starting a sergeant instance and its parent.
-WAIT_TIME_BETWEEN_SERGEANT_STARTS = 5 
+WAIT_TIME_BETWEEN_SERGEANT_STARTS = 30
 # used as a general barrier when one operation depends on another
 GENERAL_WAIT_TIME = 20
 
@@ -38,14 +38,24 @@ LATENCY_TEST_OUTPUT_FILENAME = 'dist_latency_test2.csv'
 LATENCY_NUM_OPS = 1000
 DIST_LATENCY_TEST_NAME = 'run_MultiControllerLatency'
 
+THROUGHPUT_TEST_OUTPUT_FILENAME = 'chained_throughput_output.csv'
+DIST_THROUGHPUT_TEST_NAME = 'run_MultiControllerNoContentionThroughput'
+THROUGHPUT_NUM_OPS = 5000
+
+
 
 def run_test_setup():
     hosts = [
-        'ec2-54-203-86-171.us-west-2.compute.amazonaws.com',
-        'ec2-54-202-252-75.us-west-2.compute.amazonaws.com']
-    run_latency_test(hosts,'latency_results.csv')
-    # stop_mininet_and_floodlight(hosts)
+        'ec2-54-203-200-50.us-west-2.compute.amazonaws.com', # Node a
+        'ec2-54-203-163-73.us-west-2.compute.amazonaws.com',
+        'ec2-54-184-54-96.us-west-2.compute.amazonaws.com',
+        'ec2-54-184-94-156.us-west-2.compute.amazonaws.com']
+    # run_latency_test(hosts,'latency_results.csv')
     # stop_sergeants(hosts,DIST_LATENCY_TEST_NAME)
+    
+    run_throughput_test(hosts,5,'throughput_results.csv')
+    # stop_mininet_and_floodlight(hosts)
+    # stop_sergeants(hosts,DIST_THROUGHPUT_TEST_NAME)
     print '\nWaiting a bit\n'
     time.sleep(FAST_WAIT_TIME)
 
@@ -55,7 +65,51 @@ def chmod_all_pronghorn (hosts):
     for host in hosts:
         issue_ssh(host,ssh_cmd_str)
     
+
+################ THROUGHPUT EXPERIMENT CONSTANTS #############
+
+def run_throughput_test(hosts,switches_per_controller,local_output_file):
+    print '\nchmoding all\n'
+    chmod_all_pronghorn (hosts)
     
+    # actually bring up mininet and floodlight on each host
+    start_mininet_and_floodlight(hosts,switches_per_controller)
+
+    arguments = (
+        ' -Dthroughput_port_to_listen_for_connections_on=%i ' %
+        LISTENING_FOR_PARENT_ON_PORT)
+    
+    
+    # tell head nodes to collect data and collect a particular number
+    # of ops.
+    head_arguments = ' -Doutput_filename=%s ' % THROUGHPUT_TEST_OUTPUT_FILENAME
+    head_arguments += ' -Dthroughput_num_ops=%i ' % THROUGHPUT_NUM_OPS
+    head_arguments += arguments
+
+    # tell non-head nodes to do nothing
+    non_head_arguments = ' -Dthroughput_num_ops=0 ' 
+    non_head_arguments += arguments
+
+    # parents can connect to their children on this ip/port
+    point_at_child_arg_name = ' -Dthroughput_children_to_contact_host_ports'
+
+    # start the latency tests in a chained topology
+    print '\nCreating chained sergeants\n'
+    start_sergeants_chained(
+        hosts,DIST_THROUGHPUT_TEST_NAME,head_arguments,non_head_arguments,
+        point_at_child_arg_name)
+    
+    time.sleep(GENERAL_WAIT_TIME*10)
+
+    print '\nCollecting data\n'
+    data_filename_on_server = (
+        EXPERIMENT_BUILD_PATH + '/classes/' + THROUGHPUT_TEST_OUTPUT_FILENAME)
+    collect_data(
+        hosts[0],data_filename_on_server, local_output_file)
+
+        
+
+        
 ############### LATENCY EXPERIMENT CONSTANTS ###############
 def run_latency_test(hosts,local_output_file):
     print '\nchmoding all\n'
@@ -72,13 +126,14 @@ def run_latency_test(hosts,local_output_file):
     # of ops.
     head_arguments = ' -Doutput_filename=%s ' % LATENCY_TEST_OUTPUT_FILENAME
     head_arguments += ' -Dlatency_num_ops=%i ' % LATENCY_NUM_OPS
+    head_arguments += arguments
 
     # tell non-head nodes to do nothing
     non_head_arguments = ' -Dlatency_num_ops=0 ' 
-
+    non_head_arguments += arguments
 
     # parents can connect to their children on this ip/port
-    point_at_child_arg_name = ' -Dlatency_children_to_contact_host_ports='
+    point_at_child_arg_name = ' -Dlatency_children_to_contact_host_ports'
 
     # start the latency tests in a chained topology
     print '\nCreating chained sergeants\n'
