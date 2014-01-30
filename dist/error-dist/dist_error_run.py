@@ -15,19 +15,11 @@ EXPERIMENT_BUILD_PATH = 'pronghorn/src/experiments/pronghorn/build'
 EC2_HOSTS = []
 
 # wait 5 seconds between starting a sergeant instance and its parent.
-WAIT_TIME_BETWEEN_SERGEANT_STARTS = 20
+WAIT_TIME_BETWEEN_SERGEANT_STARTS = 3
 # used as a general barrier when one operation depends on another
-GENERAL_WAIT_TIME = 35
+GENERAL_WAIT_TIME = 20
 
 FAST_WAIT_TIME = 5
-
-
-# WAIT_TIME_BETWEEN_SERGEANT_STARTS = 0
-# # used as a general barrier when one operation depends on another
-# GENERAL_WAIT_TIME = 0
-
-# FAST_WAIT_TIME = 0
-
 
 # # Example usage
 # def run_test_setup():
@@ -48,29 +40,35 @@ DIST_LATENCY_TEST_NAME = 'run_MultiControllerLatency'
 
 
 DIST_THROUGHPUT_TEST_NAME = 'run_MultiControllerNoContentionThroughput'
-# THROUGHPUT_NUM_OPS = 1000
-THROUGHPUT_NUM_OPS = 800
-NUM_SWITCHES_PER_CONTROLLER = 60
+THROUGHPUT_NUM_OPS = 5000
+NUM_SWITCHES_PER_CONTROLLER = 1
 THROUGHPUT_TEST_OUTPUT_FILENAME = (
-    'tree_throughput_output_%s_%s.csv' %
+    'chained_throughput_output_%s_%s.csv' %
     (THROUGHPUT_NUM_OPS, NUM_SWITCHES_PER_CONTROLLER))
 
 
-HOSTS = [
-    'ec2-54-203-183-238.us-west-2.compute.amazonaws.com', #node a
-    'ec2-54-203-229-201.us-west-2.compute.amazonaws.com',
-    'ec2-54-184-91-116.us-west-2.compute.amazonaws.com',
-    'ec2-54-184-56-9.us-west-2.compute.amazonaws.com']
-
+DIST_ERROR_TEST_NAME = 'run_MultiControllerError'
 
 def run_test_setup():
-    hosts = HOSTS
+    hosts = [
+        'ec2-54-203-183-238.us-west-2.compute.amazonaws.com', #node a
+        'ec2-54-203-229-201.us-west-2.compute.amazonaws.com',
+        'ec2-54-184-91-116.us-west-2.compute.amazonaws.com',
+        'ec2-54-184-56-9.us-west-2.compute.amazonaws.com']
+        
+
     # run_latency_test(hosts,'latency_results.csv')
     # stop_sergeants(hosts,DIST_LATENCY_TEST_NAME)
     
-    run_throughput_test(hosts,NUM_SWITCHES_PER_CONTROLLER,'throughput_results.csv', start_sergeants_fanout)
+    # run_throughput_test(hosts,NUM_SWITCHES_PER_CONTROLLER,'throughput_results.csv')
     # stop_mininet_and_floodlight(hosts)
     # stop_sergeants(hosts,DIST_THROUGHPUT_TEST_NAME)
+
+    run_error_test(hosts,1,'error_results.csv')
+    # stop_mininet_and_floodlight(hosts)
+    # stop_sergeants(hosts,DIST_ERROR_TEST_NAME)
+
+    
     print '\nWaiting a bit\n'
     time.sleep(FAST_WAIT_TIME)
 
@@ -81,13 +79,62 @@ def chmod_all_pronghorn (hosts):
         issue_ssh(host,ssh_cmd_str)
     
 
-################ THROUGHPUT EXPERIMENT CONSTANTS #############
+################ ERROR EXPERIMENT CONSTANTS #############
+ERROR_PROB = .01
+ERROR_TEST_OUTPUT_FILENAME = 'error_output_%f.csv' % ERROR_PROB
+ERROR_NUM_OPS = 100
+DIST_ERROR_TEST_NAME = 'run_MultiControllerError'
 
 
-def run_throughput_test(hosts,switches_per_controller,local_output_file, test):
+def run_error_test(hosts,switches_per_controller,local_output_file):
     # actually bring up mininet and floodlight on each host
     start_mininet_and_floodlight(hosts,switches_per_controller)
+
+    arguments = (
+        ' -Derror_port_to_listen_for_connections_on=%i ' %
+        LISTENING_FOR_PARENT_ON_PORT)
+    arguments += ' -Doutput_filename=%s ' % ERROR_TEST_OUTPUT_FILENAME
     
+    # tell head nodes to collect data and collect a particular number
+    # of ops.
+    head_arguments = ' -Derror_num_ops=%i ' % ERROR_NUM_OPS
+    head_arguments += arguments
+    
+
+    # tell non-head nodes to do nothing
+    non_head_arguments = ' -Derror_num_ops=0 '
+    non_head_arguments += arguments
+
+    # parents can connect to their children on this ip/port
+    point_at_child_arg_name = ' -Derror_children_to_contact_host_ports'
+
+    # start the latency tests in a chained topology
+    print '\nCreating chained sergeants\n'
+    start_sergeants_chained(
+        hosts,DIST_ERROR_TEST_NAME,head_arguments,non_head_arguments,
+        point_at_child_arg_name)
+    
+    time.sleep(GENERAL_WAIT_TIME*10)
+
+    print '\nCollecting data\n'
+    # data_filename_on_server = (
+    #     EXPERIMENT_BUILD_PATH + '/classes/' + THROUGHPUT_TEST_OUTPUT_FILENAME)
+    # collect_data(
+    #     hosts[0],data_filename_on_server, local_output_file)
+
+
+
+        
+        
+################ THROUGHPUT EXPERIMENT CONSTANTS #############
+
+def run_throughput_test(hosts,switches_per_controller,local_output_file):
+    print '\nchmoding all\n'
+    # chmod_all_pronghorn (hosts)
+    
+    # actually bring up mininet and floodlight on each host
+    start_mininet_and_floodlight(hosts,switches_per_controller)
+
     arguments = (
         ' -Dthroughput_port_to_listen_for_connections_on=%i ' %
         LISTENING_FOR_PARENT_ON_PORT)
@@ -108,7 +155,7 @@ def run_throughput_test(hosts,switches_per_controller,local_output_file, test):
 
     # start the latency tests in a chained topology
     print '\nCreating chained sergeants\n'
-    test(
+    start_sergeants_chained(
         hosts,DIST_THROUGHPUT_TEST_NAME,head_arguments,non_head_arguments,
         point_at_child_arg_name)
     
@@ -214,33 +261,6 @@ def start_sergeants_chained(
         issue_start_sergeant(host,ant_command)
         time.sleep(WAIT_TIME_BETWEEN_SERGEANT_STARTS)
 
-
-def start_sergeants_fanout(
-    hosts,test_to_run,head_arguments,non_head_arguments,point_at_child_arg_name):
-    """
-    Params same as _chained
-    """
-    # start all children
-    children = hosts[1:]
-    for host in children:
-        arguments_to_use = head_arguments
-        arguments_to_use = non_head_arguments
-        # no children
-        ant_command = 'ant ' + test_to_run + ' ' + arguments_to_use
-        issue_start_sergeant(host,ant_command)
-    time.sleep(WAIT_TIME_BETWEEN_SERGEANT_STARTS)
-    # start root
-    child_hosts_str = ",".join([ "%s:%i" % (h, LISTENING_FOR_PARENT_ON_PORT) for h in children ])
-    arguments_to_use = head_arguments
-    arguments_to_use += "%s=%s" % (point_at_child_arg_name, child_hosts_str)
-    # run
-    ant_command = 'ant ' + test_to_run + ' ' + arguments_to_use
-    issue_start_sergeant(host,ant_command)
-    time.sleep(WAIT_TIME_BETWEEN_SERGEANT_STARTS)
-
-
-        
-
         
 def issue_start_sergeant(host_to_start,test_name_and_arguments):
     '''
@@ -269,6 +289,15 @@ def stop_sergeants(hosts,what_to_pgkill_with):
         issue_ssh(host,cmd_str)
 
 def start_mininet_and_floodlight(hosts,num_switches):
+    # compile floodlight on all hosts
+    print '\nCompiling floodlight\n'
+    ssh_cmd = 'cd floodlight; ant'
+    for host in hosts:
+        issue_ssh(host,ssh_cmd)
+
+    time.sleep(GENERAL_WAIT_TIME)
+
+    
     # start floodlight on all hosts
     print '\nAbout to start floodlight\n'
     ssh_cmd = 'sudo java -jar floodlight/target/floodlight.jar'
@@ -290,16 +319,15 @@ def issue_ssh(host,ssh_cmd_str):
     '''
     @param {String} host --- name of host we're ssh-ing to 
     '''
-    cmd = ['ssh',
+    cmd = ['ssh','-i',PEM_FILENAME,
            '-o','StrictHostKeyChecking=no',
            'ubuntu@%s' % host,ssh_cmd_str]
-    print cmd
     subprocess.Popen(cmd)
 
 def collect_data(host_to_collect_from,absolute_data_filename,local_name):
     # TODO
     cmd_vec = [
-        'scp',
+        'scp','-i',PEM_FILENAME,
         'ubuntu@%s:%s'% (host_to_collect_from, absolute_data_filename),
         local_name]
     p = subprocess.Popen(cmd_vec)
@@ -318,24 +346,6 @@ def stop_mininet_and_floodlight(hosts):
         issue_ssh(host,cmd_str)
 
 
-
-def ssh_all(hosts, cmd):
-    for h in hosts:
-        issue_ssh(h, cmd) 
-
-def update(hosts):
-    ssh_all(hosts, "./experiments/manage-host.py update")
-
-def reboot(hosts):
-    ssh_all(hosts, "sudo reboot")
-def build_floodlight(hosts):
-    ssh_all(hosts, "ant -f ./floodlight/build.xml")
-        
-    
-
 if __name__ == '__main__':
     run_test_setup()
-    #update(HOSTS)
-    #reboot(HOSTS)
-    #build_floodlight(HOSTS)
     
