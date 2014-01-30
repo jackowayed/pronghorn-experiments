@@ -205,11 +205,11 @@ class ErrorExperiment(Experiment):
 
 def latency():
     for rtt in (0,2,4,8):
-        for threads in  (1, 2, 10, 50):
+        for threads in  (1, 2, 4, 8, 10):
             LatencyExperiment(rtt, threads).run()
 
 def fairness():
-    for num_ops in [100, 1000,2000, 5000,10000]:
+    for num_ops in [100, 500, 1000]:
         for wound_wait in (True, False):
             print FairnessExperiment(wound_wait, num_ops).run()
 
