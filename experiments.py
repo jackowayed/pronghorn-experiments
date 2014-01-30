@@ -259,7 +259,7 @@ class MultiLatency(Experiment):
         base_port = 30305
         flags = []
         flags.append('-Dlatency_port_to_listen_for_connections_on=%i'%base_port)
-        if !root:
+        if not root:
             flags.append("-Dlatency_num_ops=0")
         if len(child_hosts) > 0:
             flags.append('-Dlatency_children_to_contact_host_ports=%s:30305' % child_hosts[0])
