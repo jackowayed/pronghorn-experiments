@@ -26,6 +26,10 @@ def experiment():
     exp = deserialize_experiment(sys.argv[2])
     exp.run()
 
+def mininet():
+    num_switches = int(sys.argv[2])
+    net = Mininet(topo=FlatTopo(num_switches), controller=lambda name: RemoteController(name, ip='127.0.0.2'))
+    net.start()
 
 
 
@@ -33,5 +37,9 @@ command = sys.argv[1]
 
 if command == "update":
     update()
-if command == "experiment":
+elif command == "experiment":
     experiment()
+elif command == "mininet":
+    mininet()
+else:
+    print "doing nothing"
