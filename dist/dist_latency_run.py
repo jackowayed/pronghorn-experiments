@@ -15,9 +15,9 @@ EXPERIMENT_BUILD_PATH = 'pronghorn/src/experiments/pronghorn/build'
 EC2_HOSTS = []
 
 # wait 5 seconds between starting a sergeant instance and its parent.
-WAIT_TIME_BETWEEN_SERGEANT_STARTS = 30
+WAIT_TIME_BETWEEN_SERGEANT_STARTS = 20
 # used as a general barrier when one operation depends on another
-GENERAL_WAIT_TIME = 20
+GENERAL_WAIT_TIME = 30
 
 FAST_WAIT_TIME = 5
 
@@ -40,8 +40,8 @@ DIST_LATENCY_TEST_NAME = 'run_MultiControllerLatency'
 
 
 DIST_THROUGHPUT_TEST_NAME = 'run_MultiControllerNoContentionThroughput'
-THROUGHPUT_NUM_OPS = 5000
-NUM_SWITCHES_PER_CONTROLLER = 1
+THROUGHPUT_NUM_OPS = 1000
+NUM_SWITCHES_PER_CONTROLLER = 60
 THROUGHPUT_TEST_OUTPUT_FILENAME = (
     'chained_throughput_output_%s_%s.csv' %
     (THROUGHPUT_NUM_OPS, NUM_SWITCHES_PER_CONTROLLER))
@@ -49,10 +49,11 @@ THROUGHPUT_TEST_OUTPUT_FILENAME = (
 
 def run_test_setup():
     hosts = [
-        'ec2-54-203-200-50.us-west-2.compute.amazonaws.com', # Node a
-        'ec2-54-203-163-73.us-west-2.compute.amazonaws.com',
-        'ec2-54-184-54-96.us-west-2.compute.amazonaws.com',
-        'ec2-54-184-94-156.us-west-2.compute.amazonaws.com']
+        'ec2-54-202-198-195.us-west-2.compute.amazonaws.com', # node a
+        'ec2-54-203-217-172.us-west-2.compute.amazonaws.com', 
+        'ec2-54-203-229-215.us-west-2.compute.amazonaws.com',
+        'ec2-54-244-102-62.us-west-2.compute.amazonaws.com'
+]
     # run_latency_test(hosts,'latency_results.csv')
     # stop_sergeants(hosts,DIST_LATENCY_TEST_NAME)
     
@@ -78,7 +79,7 @@ def run_throughput_test(hosts,switches_per_controller,local_output_file):
     
     # actually bring up mininet and floodlight on each host
     start_mininet_and_floodlight(hosts,switches_per_controller)
-
+    
     arguments = (
         ' -Dthroughput_port_to_listen_for_connections_on=%i ' %
         LISTENING_FOR_PARENT_ON_PORT)
@@ -239,7 +240,7 @@ def start_mininet_and_floodlight(hosts,num_switches):
     for host in hosts:
         issue_ssh(host,ssh_cmd)
 
-    time.sleep(GENERAL_WAIT_TIME)
+    time.sleep(5*GENERAL_WAIT_TIME)
 
     
     # start floodlight on all hosts
