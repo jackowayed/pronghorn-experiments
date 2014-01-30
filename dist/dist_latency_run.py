@@ -41,26 +41,27 @@ DIST_LATENCY_TEST_NAME = 'run_MultiControllerLatency'
 
 DIST_THROUGHPUT_TEST_NAME = 'run_MultiControllerNoContentionThroughput'
 THROUGHPUT_NUM_OPS = 1000
-NUM_SWITCHES_PER_CONTROLLER = 20
+NUM_SWITCHES_PER_CONTROLLER = 1
 THROUGHPUT_TEST_OUTPUT_FILENAME = (
     'chained_throughput_output_%s_%s.csv' %
     (THROUGHPUT_NUM_OPS, NUM_SWITCHES_PER_CONTROLLER))
 
 
+HOSTS = [
+    'ec2-54-203-183-238.us-west-2.compute.amazonaws.com', #node a
+    'ec2-54-203-229-201.us-west-2.compute.amazonaws.com',
+    'ec2-54-184-91-116.us-west-2.compute.amazonaws.com',
+    'ec2-54-184-56-9.us-west-2.compute.amazonaws.com']
+
+
 def run_test_setup():
-    hosts = [
-        'ec2-54-202-198-195.us-west-2.compute.amazonaws.com', # node a
-        'ec2-54-203-217-172.us-west-2.compute.amazonaws.com', 
-        'ec2-54-203-229-215.us-west-2.compute.amazonaws.com',
-        'ec2-54-244-102-62.us-west-2.compute.amazonaws.com'
-]
+    hosts = HOSTS
     # run_latency_test(hosts,'latency_results.csv')
     # stop_sergeants(hosts,DIST_LATENCY_TEST_NAME)
     
-    run_throughput_test(hosts,NUM_SWITCHES_PER_CONTROLLER,'throughput_results.csv')
-    
-    # stop_mininet_and_floodlight(hosts)
-    # stop_sergeants(hosts,DIST_THROUGHPUT_TEST_NAME)
+    run_throughput_test(hosts,NUM_SWITCHES_PER_CONTROLLER,'throughput_results.csv', start_sergeants_fanout)
+    stop_mininet_and_floodlight(hosts)
+    stop_sergeants(hosts,DIST_THROUGHPUT_TEST_NAME)
     print '\nWaiting a bit\n'
     time.sleep(FAST_WAIT_TIME)
 
@@ -73,10 +74,8 @@ def chmod_all_pronghorn (hosts):
 
 ################ THROUGHPUT EXPERIMENT CONSTANTS #############
 
-def run_throughput_test(hosts,switches_per_controller,local_output_file):
-    print '\nchmoding all\n'
-    # chmod_all_pronghorn (hosts)
-    
+
+def run_throughput_test(hosts,switches_per_controller,local_output_file, test):
     # actually bring up mininet and floodlight on each host
     start_mininet_and_floodlight(hosts,switches_per_controller)
     
@@ -100,7 +99,7 @@ def run_throughput_test(hosts,switches_per_controller,local_output_file):
 
     # start the latency tests in a chained topology
     print '\nCreating chained sergeants\n'
-    start_sergeants_chained(
+    test(
         hosts,DIST_THROUGHPUT_TEST_NAME,head_arguments,non_head_arguments,
         point_at_child_arg_name)
     
@@ -206,6 +205,32 @@ def start_sergeants_chained(
         issue_start_sergeant(host,ant_command)
         time.sleep(WAIT_TIME_BETWEEN_SERGEANT_STARTS)
 
+
+def start_sergeants_fanout(
+    hosts,test_to_run,head_arguments,non_head_arguments,point_at_child_arg_name):
+    """
+    Params same as _chained
+    """
+    # start all children
+    children = hosts[1:]
+    for host in children:
+        arguments_to_use = head_arguments
+        arguments_to_use = non_head_arguments
+        # no children
+        ant_command = 'ant ' + test_to_run + ' ' + arguments_to_use
+        issue_start_sergeant(host,ant_command)
+    time.sleep(WAIT_TIME_BETWEEN_SERGEANT_STARTS)
+    # start root
+    child_hosts_str = ",".join([ "%s:%i" % (h, LISTENING_FOR_PARENT_ON_PORT) for h in children ])
+    arguments_to_use += "%s=%s" % (point_at_child_arg_name, child_hosts_str)
+    # run
+    ant_command = 'ant ' + test_to_run + ' ' + arguments_to_use
+    issue_start_sergeant(host,ant_command)
+    time.sleep(WAIT_TIME_BETWEEN_SERGEANT_STARTS)
+
+
+        
+
         
 def issue_start_sergeant(host_to_start,test_name_and_arguments):
     '''
@@ -234,15 +259,6 @@ def stop_sergeants(hosts,what_to_pgkill_with):
         issue_ssh(host,cmd_str)
 
 def start_mininet_and_floodlight(hosts,num_switches):
-    # compile floodlight on all hosts
-    print '\nCompiling floodlight\n'
-    ssh_cmd = 'cd floodlight; ant'
-    for host in hosts:
-        issue_ssh(host,ssh_cmd)
-
-    time.sleep(5*GENERAL_WAIT_TIME)
-
-    
     # start floodlight on all hosts
     print '\nAbout to start floodlight\n'
     ssh_cmd = 'sudo java -jar floodlight/target/floodlight.jar'
@@ -264,7 +280,7 @@ def issue_ssh(host,ssh_cmd_str):
     '''
     @param {String} host --- name of host we're ssh-ing to 
     '''
-    cmd = ['ssh','-i',PEM_FILENAME,
+    cmd = ['ssh',
            '-o','StrictHostKeyChecking=no',
            'ubuntu@%s' % host,ssh_cmd_str]
     subprocess.Popen(cmd)
@@ -272,7 +288,7 @@ def issue_ssh(host,ssh_cmd_str):
 def collect_data(host_to_collect_from,absolute_data_filename,local_name):
     # TODO
     cmd_vec = [
-        'scp','-i',PEM_FILENAME,
+        'scp',
         'ubuntu@%s:%s'% (host_to_collect_from, absolute_data_filename),
         local_name]
     p = subprocess.Popen(cmd_vec)
@@ -291,6 +307,24 @@ def stop_mininet_and_floodlight(hosts):
         issue_ssh(host,cmd_str)
 
 
+
+def ssh_all(hosts, cmd):
+    for h in hosts:
+        issue_ssh(h, cmd) 
+
+def update(hosts):
+    ssh_all(hosts, "./experiments/manage-host.py update")
+
+def reboot(hosts):
+    ssh_all(hosts, "sudo reboot")
+def build_floodlight(hosts):
+    ssh_all(hosts, "ant -f ./floodlight/build.xml")
+        
+    
+
 if __name__ == '__main__':
     run_test_setup()
+    #update(HOSTS)
+    #reboot(HOSTS)
+    #build_floodlight(HOSTS)
     
