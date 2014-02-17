@@ -3,9 +3,10 @@
 from experiments import *
 
 #latency()
-fairness()
+latency_no_rtt()
+# fairness()
 #for i in range(4):
 #    all_throughput()
 #error()
-#all_throughput()
+all_throughput()
 #ErrorExperiment(50, 16).run()

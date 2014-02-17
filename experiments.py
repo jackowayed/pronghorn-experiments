@@ -20,8 +20,9 @@ from mininet.cli import CLI
 with open(os.path.dirname(os.path.realpath(__file__)) + "/basedir.txt", 'r') as f:
     BASE_PATH = f.read().strip()
 
-FLOODLIGHT_PATH = os.path.join(BASE_PATH, "floodlight")
+
 PRONGHORN_PATH = os.path.join(BASE_PATH, "pronghorn")
+FLOODLIGHT_PATH = os.path.join(PRONGHORN_PATH, "externals","floodlight")
 PRONGHORN_BUILD_DIR = PRONGHORN_PATH + "/src/experiments/pronghorn/build"
 PAPER_DATA = os.path.join(BASE_PATH, "data")
 
@@ -184,6 +185,18 @@ class ThroughputExperiment(Experiment):
         filename_flag = data_fname_flag(task, "%d"  % switches)
         Experiment.__init__(self, FlatTopo(switches), task, 0, [filename_flag], num_controllers=num_controllers)
 
+
+class VariableContentionThroughputExperiment(Experiment):
+    def __init__(self, variable_contention_num_threads, variable_contention_num_ops=10000, task="SingleControllerVariableContentionThroughput", num_controllers=1):
+        # include ms since epoch time in fname.
+        # DO NOT create two tests with same task and #switches at same time, because this is timestamp of
+        # creation, not execution.
+        flags = ["-Dvariable_contention_num_ops=" + str(variable_contention_num_ops),
+                 "-Dvariable_contention_num_threads=" + str(variable_contention_num_threads),
+                 data_fname_flag(task, "%ds-%d" % ((variable_contention_num_ops), variable_contention_num_threads))]
+        Experiment.__init__(self, FlatTopo(1), task, 0, flags, num_controllers=num_controllers)
+        
+        
 class FairnessExperiment(Experiment):
     def __init__(self, wound_wait=False, ops=100):
         task = "Fairness"
@@ -202,12 +215,20 @@ class ErrorExperiment(Experiment):
         Experiment.__init__(self, FlatTopo(switches), task, 0, ant_extras=flags)
 
 
-
+def single_contention_variable_threads():
+    for num_threads in (1,2,4,6,8,10):
+        VariableContentionThroughputExperiment(num_threads).run()
+        
 def latency():
     for rtt in (0,2,4,8):
         for threads in  (1, 2, 10, 50):
             LatencyExperiment(rtt, threads).run()
 
+def latency_no_rtt():
+    for threads in  (1, 2, 5, 10, 20):
+        print '\nAbout to run latency_no_rtt threads %i\n' % threads
+        LatencyExperiment(0, threads).run()
+            
 def fairness():
     for num_ops in [100, 1000,2000, 5000,10000]:
         for wound_wait in (True, False):
@@ -219,12 +240,14 @@ def error():
             ErrorExperiment(switches, err).run()
 
 
-THROUGHPUT_INPUTS = (1,5, 10, 20, 60)
+THROUGHPUT_INPUTS = (1, 2, 5, 10, 20)
 def all_throughput():
     for i in THROUGHPUT_INPUTS:
-        for task in ["NoContentionThroughput", "ContentionThroughput"]:
+        for task in ["NoContentionThroughput"]:
+                     #"ContentionThroughput"]:
                      #"NoContentionCoarseLockingThroughput",
                      #"ContentionCoarseLockingThroughput"):
+            print '\nAbout to run %s with input %i\n' % (task,i)
             print ThroughputExperiment(i, task).run()
 
 
