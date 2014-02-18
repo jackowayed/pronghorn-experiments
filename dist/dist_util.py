@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+import subprocess
+
+
 CONF_FILE_LINES_PER_ENTRY = 4
 DEFAULT_CONF_FILE = 'distributed.cfg'
 
@@ -13,6 +16,20 @@ class HostEntry(object):
         self.key_filename = key_filename
         self.username = username
         self.hostname = hostname
+
+    def issue_ssh(self,ssh_cmd_str,block_until_completion=False):
+        cmd_vec = ['ssh','-o','StrictHostKeyChecking=no']
+        if self.key_filename is not None:
+            cmd_vec.extend(['-i',self.key_filename])
+        cmd_vec.append('%s@%s' % (self.username,self.hostname))
+        cmd_vec.append(ssh_cmd_str)
+        cmd_vec = ['ssh','-i',PEM_FILENAME,
+               '-o','StrictHostKeyChecking=no',
+               'ubuntu@%s' % host,ssh_cmd_str]
+        p = subprocess.Popen(cmd_vec)
+        if block_until_completion:
+            p.wait()
+        return p
         
     def debug_print(self):
         key_file_txt = 'no key file'
