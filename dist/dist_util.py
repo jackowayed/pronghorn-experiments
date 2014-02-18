@@ -2,6 +2,7 @@
 
 import subprocess
 
+DEFAULT_JAR_DIRECTORY = 'experiments_jar'
 
 CONF_FILE_LINES_PER_ENTRY = 4
 LISTENING_FOR_CONNECTIONS_ON_PORT = 31521
@@ -70,6 +71,26 @@ class HostEntry(object):
         self.username = username
         self.hostname = hostname
 
+    def start_mininet(self,num_switches):
+        ssh_cmd = 'sudo mn --controller=remote --topo=linear,%i' % num_switches
+        self.issue_ssh(ssh_cmd_str)
+
+    def stop_mininet(self):
+        self.issue_pkill('mn')
+        
+    def issue_pkill(self,what_to_pkill):
+        cmd_str = 'sudo pkill -f %s' % waht_to_pkill
+        self.issue_ssh(cmd_str)
+
+    def collect_result_file(self,foreign_filename,local_filename):
+        cmd_vec = ['scp','-o','StrictHostKeyChecking=no']
+        if self.key_filename is not None:
+            cmd_vec.extend(['-i',self.key_filename])
+        cmd_vec.append('%s@%s:%s' % (self.username,self.hostname,foreign_filename))
+        cmd_vec.append(local_filename)
+        p = subprocess.Popen(cmd_vec)
+        p.wait()
+        
     def issue_ssh(self,ssh_cmd_str,block_until_completion=False):
         cmd_vec = ['ssh','-o','StrictHostKeyChecking=no']
         if self.key_filename is not None:
