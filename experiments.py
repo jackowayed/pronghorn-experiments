@@ -158,7 +158,7 @@ class ThroughputExperiment(Experiment):
         # include ms since epoch time in fname.
         # DO NOT create two tests with same task and #switches at same
         # time, because this is timestamp of creation, not execution.
-        output_filename = data_fname_flag(task_name, "%d"  % num_switches)
+        output_filename = output_data_fname(task_name, "%d"  % num_switches)
 
         Experiment.__init__(
             self,topo,jar_name,output_filename,0,arguments)
