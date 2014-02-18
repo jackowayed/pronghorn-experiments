@@ -7,6 +7,7 @@ DEFAULT_JAR_DIRECTORY = 'experiments_jar'
 CONF_FILE_LINES_PER_ENTRY = 4
 LISTENING_FOR_CONNECTIONS_ON_PORT = 31521
 DEFAULT_CONF_FILE = 'distributed.cfg'
+BETWEEN_NODE_WAIT_TIME_SECONDS = 2
 
 def produce_linear_topology_arguments(host_entry_list):
     '''
@@ -67,6 +68,74 @@ def kill_all(host_entry_list,jar_name):
         host_entry.issue_pkill(jar_name)
 
 
+def run_linear_test(jar_name,local_filename,head_num_ops_to_run_per_switch,
+                    command_string, max_experiment_wait_time_seconds):
+    '''
+    @param {String} jar_name --- Does not include name of default jar
+    directory.
+
+    @param {String} local_filename --- When experiments are finished
+    executing, save the results locally with this filename.
+
+    @param {int} head_num_ops_to_run_per_switch --- The number of
+    operations to run from master node.
+
+    @param {String} command_string --- The command to execute from
+    within the DEFAULT_JAR_DIRECTORY.  Should be a format string that
+    takes in five, ordered parameters:
+
+        1) %s --- The jar to execute
+        2) %s --- The who to connect to csv argument
+        3) %i --- Which port to listen for connections on
+        4) %i --- The number of operations to run
+        5) %s --- The name of the file to save results to on foreign host
+    
+    @param {int} max_experiment_wait_time_seconds --- The time to wait
+    for the experiment to finish before tearing everything down and
+    copying the result file from head to local machine.
+    '''
+    foreign_output_filename = 'output.csv'
+    host_entry_list = read_conf_file()
+    linear_topo_args = produce_linear_topology_arguments(host_entry_list)
+
+    # start sergeant on nodes in reverse order
+    for i in range(len(host_entry_list) -1, -1, -1):
+        host_entry_to_start = host_entry_list[i]
+        who_to_contact_args = linear_topo_args[i]
+
+        if i != 0:
+            # non-head node
+            num_ops_to_run_per_switch = 0
+        else:
+            # head            
+            num_ops_to_run_per_switch = head_num_ops_to_run_per_switch
+
+        ssh_cmd = 'cd %s; ' % DEFAULT_JAR_DIRECTORY
+        ssh_cmd += (command_string %
+                    (LATENCY_TEST_JAR_NAME,
+                     who_to_contact_args,
+                     LISTENING_FOR_CONNECTIONS_ON_PORT,
+                     num_ops_to_run_per_switch,
+                     foreign_output_filename))
+
+        host_entry_to_start.issue_ssh(ssh_cmd)
+        time.sleep(BETWEEN_NODE_WAIT_TIME_SECONDS)
+
+    # now that we've started all nodes, start mininet on all nodes:
+    # start in reverse order so that can ensure last node
+    for host_entry in reversed(host_entry_list):
+        host_entry.start_mininet()
+
+    # wait for experiment to complete
+    time.sleep(max_experiment_wait_time_seconds)
+
+    # teardown mininets and experiments
+    kill_all(host_entry_list,jar_name)
+    
+    # collect result file from master
+    head = host_entry[0]
+    head.collect_result_file(foreign_output_filename,local_filename_to_save_to)
+
 
 class HostEntry(object):
     def __init__(self,key_filename,username,hostname):
@@ -86,7 +155,7 @@ class HostEntry(object):
         self.issue_pkill('mn')
         
     def issue_pkill(self,what_to_pkill):
-        cmd_str = 'sudo pkill -f %s' % waht_to_pkill
+        cmd_str = 'sudo pkill -f %s' % what_to_pkill
         self.issue_ssh(cmd_str)
 
     def collect_result_file(self,foreign_filename,local_filename):
@@ -104,9 +173,10 @@ class HostEntry(object):
             cmd_vec.extend(['-i',self.key_filename])
         cmd_vec.append('%s@%s' % (self.username,self.hostname))
         cmd_vec.append(ssh_cmd_str)
-        cmd_vec = ['ssh','-i',PEM_FILENAME,
-               '-o','StrictHostKeyChecking=no',
-               'ubuntu@%s' % host,ssh_cmd_str]
+        cmd_vec = ['ssh',
+                   '-o','StrictHostKeyChecking=no',
+                   '%s@%s' % (self.username,self.hostname),
+                   ssh_cmd_str]
         p = subprocess.Popen(cmd_vec)
         if block_until_completion:
             p.wait()
