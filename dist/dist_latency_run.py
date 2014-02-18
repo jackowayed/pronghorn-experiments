@@ -2,8 +2,9 @@
 
 from dist_util import produce_linear_topology_arguments, DEFAULT_JAR_DIRECTORY
 from dist_util import produce_tree_topology_arguments, read_conf_file
-from dist_util import LISTENING_FOR_CONNECTIONS_ON_PORT
+from dist_util import LISTENING_FOR_CONNECTIONS_ON_PORT, kill_all
 import time
+import sys
 
 LATENCY_TEST_JAR_NAME = 'multi_controller_latency.jar'
 
@@ -50,20 +51,38 @@ def linear_latency_test(local_filename_to_save_to,
     # wait for experiment to complete
     time.sleep(MAX_EXPERIMENT_WAIT_TIME_SECONDS)
 
-    # tear down all mininets and all experiments
-    for host_entry in host_entry_list:
-        host_entry.stop_mininet()
-        host_entry.issue_pkill(LATENCY_TEST_JAR_NAME)
-
+    # teardown mininets and experiments
+    kill_latency_experiments(host_entry_list)
+    
     # collect result file from master
     head = host_entry[0]
     head.collect_result_file(output_filename,local_filename_to_save_to)
-        
+
+def kill_latency_experiments(host_entry_list=None):
+    if host_entry_list is None:
+        host_entry_list = read_conf_file()
+    kill_all(host_entry_list,LATENCY_TEST_JAR_NAME)
+
+
+def print_usage():
+    print ('''
+
+  ./dist_latency_run <arg>
+
+     <arg> --- Either -kill, to destroy all latency tests and
+     partially running latency tests on all hosts or name of file to
+     save results to locally.
+
+''')
+    
         
 if __name__ == '__main__':
 
     if len(sys.argv) != 2:
-        print 'Requires name to save output file to'
+        print_usage()
     else:
-        linear_latency_tests(sys.argv[1])
+        if sys.argv[1] == '-kill':
+            kill_latency_experiments()
+        else:
+            linear_latency_tests(sys.argv[1])
     

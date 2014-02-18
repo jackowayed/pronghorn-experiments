@@ -60,6 +60,13 @@ def produce_tree_topology_arguments(host_entry_list):
     return to_return
 
 
+def kill_all(host_entry_list,jar_name):
+    # tear down all mininets and all experiments
+    for host_entry in host_entry_list:
+        host_entry.stop_mininet()
+        host_entry.issue_pkill(jar_name)
+
+
 
 class HostEntry(object):
     def __init__(self,key_filename,username,hostname):
