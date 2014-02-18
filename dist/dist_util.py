@@ -4,7 +4,60 @@ import subprocess
 
 
 CONF_FILE_LINES_PER_ENTRY = 4
+LISTENING_FOR_CONNECTIONS_ON_PORT = 31521
 DEFAULT_CONF_FILE = 'distributed.cfg'
+
+def produce_linear_topology_arguments(host_entry_list):
+    '''
+    @returns {list} --- Each element is a string that contains the
+    host-port pairs that the corresponding HostEntry object should try
+    to connect to if we were going to create a linear topology
+
+    Note: assumes that last element in host_entry_list is tail
+    (connects to no one) and first element is head.
+
+    Example:
+       host_entry_list = [a,b,c,d]
+
+       topo: a -> b -> c -> d
+    '''
+    to_return = []
+    for i in range(0,len(host_entry_list) - 1):
+        next_entry = host_entry_list[i+1]
+        current_entry_args = (
+            '%s:%i' % (next_entry.hostname,LISTENING_FOR_CONNECTIONS_ON_PORT))
+        to_return.append(current_entry_args)
+
+    if len(host_entry_list) != 0:
+        # last controller in line does not try to connect to any other.
+        to_return.append('')
+
+    return to_return
+
+def produce_tree_topology_arguments(host_entry_list):
+    '''
+    @see produce_linear_topology_arguments.
+
+    Example:
+       host_entry_list = [a,b,c,d]
+
+       topo:     a
+               / | \
+              b  c  d
+    '''
+    to_return = [''] * len(host_entry_list)
+    if len(host_entry_list) == 0:
+        return to_return
+    
+    master_host_port_pairs = ''
+    for i in range(1,len(host_entry_list)):
+        host_entry = host_entry_list[i]
+        master_host_port_pairs += (
+            '%s:%i,' % (host_entry.hostname,LISTENING_FOR_CONNECTIONS_ON_PORT))
+        
+    to_return[0] = master_host_port_pairs
+    return to_return
+
 
 
 class HostEntry(object):
@@ -81,3 +134,14 @@ if __name__ == '__main__':
     host_entry_list = read_conf_file()
     for host_entry in host_entry_list:
         host_entry.debug_print()
+
+    print '\nTree'
+    for argument in produce_tree_topology_arguments(host_entry_list):
+        print argument
+    print '\n'
+
+
+    print '\nLine'
+    for argument in produce_linear_topology_arguments(host_entry_list):
+        print argument
+    print '\n'
