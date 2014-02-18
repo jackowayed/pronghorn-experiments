@@ -2,7 +2,7 @@
 
 import subprocess
 
-DEFAULT_JAR_DIRECTORY = 'experiments_jar'
+DEFAULT_JAR_DIRECTORY = 'experiments_jar_dir'
 
 CONF_FILE_LINES_PER_ENTRY = 4
 LISTENING_FOR_CONNECTIONS_ON_PORT = 31521
@@ -158,6 +158,30 @@ class HostEntry(object):
         cmd_str = 'sudo pkill -f %s' % what_to_pkill
         self.issue_ssh(cmd_str)
 
+    def scp_to_foreign(self,local_name,foreign_name,recursive,
+                       block_until_completion=False):
+        '''
+        @param {String} local_name
+        @param {String} foreign_name
+        
+        @param {boolean} recursive --- True if should issue scp as
+        recursive.  False otherwise.
+        '''
+        cmd_vec = ['scp','-o','StrictHostKeyChecking=no']
+        if self.key_filename is not None:
+            cmd_vec.extend(['-i',self.key_filename])
+        if recursive:
+            cmd_vec.append('-r')
+
+        cmd_vec.append(local_name)            
+        cmd_vec.append('%s@%s:%s' % (self.username,self.hostname,foreign_name))
+        
+        p = subprocess.Popen(cmd_vec)
+        if block_until_completion:
+            p.wait()
+        return p
+        
+        
     def collect_result_file(self,foreign_filename,local_filename):
         cmd_vec = ['scp','-o','StrictHostKeyChecking=no']
         if self.key_filename is not None:
