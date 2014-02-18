@@ -4,9 +4,7 @@ import os
 import subprocess
 import sys
 import time
-
-
-import docker
+import threading
 
 #from net-test import FlatTopo
 from mininet.net import Mininet
@@ -19,18 +17,10 @@ from mininet.cli import CLI
 
 with open(os.path.dirname(os.path.realpath(__file__)) + "/basedir.txt", 'r') as f:
     BASE_PATH = f.read().strip()
-
-FLOODLIGHT_PATH = os.path.join(BASE_PATH, "floodlight")
-PRONGHORN_PATH = os.path.join(BASE_PATH, "pronghorn")
-PRONGHORN_BUILD_DIR = PRONGHORN_PATH + "/src/experiments/pronghorn/build"
+    
+EXPERIMENTS_JAR_DIR = os.path.join(BASE_PATH,'experiment_jars')
 PAPER_DATA = os.path.join(BASE_PATH, "data")
 
-OPENFLOW_PORT=6633
-REST_PORT=8080
-
-DOCKER = docker.Client(base_url='unix://var/run/docker.sock',
-                       version='1.6',
-                       timeout=10)
 
 START = int(time.time())
 
@@ -57,8 +47,8 @@ def data_dir(task):
     path = "%s/%s-%d" % (PAPER_DATA, task, START)
     return path
 
-def data_fname_flag(task, basename):
-    return "-Doutput_filename=%s/%s.csv" % (data_dir(task), basename)
+def output_data_fname(task, basename):
+    return "%s/%s.csv" % (data_dir(task), basename)
 
 
 class MultiSwitch( OVSSwitch ):
@@ -74,159 +64,130 @@ class FlatTopo(Topo):
         for i in range(switches):
             switch = self.addSwitch("s%d" % (i + 1))
 
-IMAGE = "jackowayed/floodlight"
-class FloodlightContainer:
-    def launch_container(self):
-        self.did = self.client.create_container(IMAGE, ports=[OPENFLOW_PORT, REST_PORT])["Id"]
-        self.client.start(self.did, port_bindings={OPENFLOW_PORT: None,
-                                                   REST_PORT: None})
 
-    def __init__(self, docker_client):
-        self.client = docker_client
-        try:
-            self.launch_container()
-        except docker.client.APIError as e:
-            print e
-            # one more try
-            self.launch_container()
-        containers = [c for c in self.client.containers() if c["Id"] == self.did]
-        if len(containers) != 1:
-            print containers
-            print len(containers)
-            assert(False)
-        c = containers[0]
-        for port in c["Ports"]:
-            if port["PrivatePort"] == OPENFLOW_PORT:
-                self.of_port = port["PublicPort"]
-            if port["PrivatePort"] == REST_PORT:
-                self.rest_port = port["PublicPort"]
-
-    def kill(self):
-        self.client.kill(self.did)
-
-
+CONTROLLER_OF_PORT = 6633            
 class setup():
     def __init__(self, exp):
         self.exp = exp
 
     def __enter__(self):
-        set_rtt(self.exp.rtt)
-        self.exp.ensure_output_dir()
-        self.containers = []
         # Run Mininet
         self.net = Mininet(topo=self.exp.topology, build=False, switch=MultiSwitch)
-
-        # Run floodlights
-        for i in range(self.exp.num_controllers):
-            c = FloodlightContainer(DOCKER)
-            self.containers.append(c)
-            self.net.addController(RemoteController("c%d" % i, ip="127.0.0.2", port=c.of_port))
+        self.net.addController(
+            RemoteController("c0", ip="127.0.0.1", port=CONTROLLER_OF_PORT))
         time.sleep(5)
         self.net.build()
         time.sleep(5)
         self.net.start()
         return self
 
-
     def __exit__(self, type, value, traceback):
         set_rtt(0)
         self.net.stop()
-        for c in self.containers:
-            c.kill()
 
-
+            
 class Experiment:
-    def __init__(self, topology, task, rtt=0, ant_extras=(), num_controllers=1):
+    def __init__(
+        self, topology, jar_name, output_file,rtt=0,
+        arguments=None, num_controllers=1):
+        
         self.topology = topology
-        self.task = task
+        self.fq_jar = os.path.join(EXPERIMENTS_JAR_DIR,jar_name)
+        self.output_file = output_file
         self.rtt = rtt
-        self.ant_extras=ant_extras
         self.num_controllers = num_controllers
-
+        self.arguments = []
+        if arguments is not None:
+            self.arguments = arguments
+        self.arguments.append(self.output_file)
+        self.arguments = map(
+            lambda to_stringify: str(to_stringify),
+            self.arguments)
+        
     def run(self):
-        with setup(self) as s:
-            task = ["ant", "-f", PRONGHORN_BUILD_DIR + "/build.xml", "run_" + self.task]
-            task.append("-Drest_ports=" + ",".join([ str(c.rest_port) for c in s.containers]))
-            task.extend(self.ant_extras)
-            print task
-            sys.stdout.flush()
-            return subprocess.call(task)
+        self.ensure_output_dir()
+        set_rtt(self.rtt)
+        
+        subprocess_thread = threading.Thread(target=self.subproc_thread)
+        subprocess_thread.daemon = True
+        subprocess_thread.start()
+        time.sleep(1)
 
+        with setup(self) as mininet_setup:
+            subprocess_thread.join()
+
+
+    def subproc_thread(self):
+        task = ['java','-jar',self.fq_jar]
+        task.extend(self.arguments)
+        print task
+        sys.stdout.flush()
+        subprocess.call(task)
+
+    
     def ensure_output_dir(self):
-        for s in self.ant_extras:
-            key = "-Doutput_filename="
-            length = len(key)
-            if s[:length] == key:
-                fname = s[length:]
-                dirname = os.path.dirname(fname)
-                try:
-                    os.mkdir(dirname)
-                except OSError:
-                    # exists
-                    None
+        dirname = os.path.dirname(self.output_file)
+        try:
+            os.mkdir(dirname)
+        except OSError:
+            # exists
+            None
 
 
 class LatencyExperiment(Experiment):
-    def __init__(self, rtt, threads=1):
+    def __init__(self, task_name,rtt, num_ops_per_thread, num_threads):
         topo = FlatTopo(switches=1)
-        task = "SingleControllerLatency"
-        filename_flag = data_fname_flag(task, "%d-%d" % (rtt * 1000, threads))
-        flags = [filename_flag]
-        flags.append("-Dlatency_num_threads=%d" % threads)
-        Experiment.__init__(self, topo, task, rtt, flags)
-
+        jar_name = 'single_controller_latency.jar'
+        output_file = output_data_fname(task_name,"%d-%d" % (rtt * 1000, num_threads))
+        arguments = [num_ops_per_thread,num_threads]
+        Experiment.__init__(self, topo, jar_name, output_file,rtt, arguments)
 
 class ThroughputExperiment(Experiment):
-    def __init__(self, switches, task="NoContentionThroughput", num_controllers=1):
+    def __init__(
+        self, num_switches, task_name, coarse_locking_boolean,
+        num_threads_per_switch,num_ops_per_thread):
+        
+        topo = FlatTopo(num_switches)
+        jar_name = 'single_controller_throughput.jar'
+        javaized_coarse_locking = 'true' if coarse_locking_boolean else 'false'
+
+        arguments = [
+            str(num_ops_per_thread),javaized_coarse_locking,
+            str(num_threads_per_switch)]
+        
         # include ms since epoch time in fname.
-        # DO NOT create two tests with same task and #switches at same time, because this is timestamp of
-        # creation, not execution.
-        filename_flag = data_fname_flag(task, "%d"  % switches)
-        Experiment.__init__(self, FlatTopo(switches), task, 0, [filename_flag], num_controllers=num_controllers)
+        # DO NOT create two tests with same task and #switches at same
+        # time, because this is timestamp of creation, not execution.
+        output_filename = data_fname_flag(task_name, "%d"  % num_switches)
 
-class FairnessExperiment(Experiment):
-    def __init__(self, wound_wait=False, ops=100):
-        task = "Fairness"
-        flags = ["-Dwound_wait=" + str(wound_wait).lower(),
-                 "-Dfairness_num_ops=" + str(ops),
-                 data_fname_flag(task, "%s-%d" % (str(wound_wait).lower(), ops))]
-        Experiment.__init__(self, FlatTopo(2), task, 0,
-                            ant_extras=flags, num_controllers=2)
-
-class ErrorExperiment(Experiment):
-    def __init__(self, switches, error_percent):
-        task = "Error"
-        flags = ["-Derror_num_ops_to_run_per_experiment=100",
-                 "-Derror_failure_prob=%f" % (float(error_percent)/100),
-                 data_fname_flag(task, "%d-%d" % (error_percent, switches))]
-        Experiment.__init__(self, FlatTopo(switches), task, 0, ant_extras=flags)
+        Experiment.__init__(
+            self,topo,jar_name,output_filename,0,arguments)
 
 
-
+DEFAULT_NUM_OPERATIONS_PER_THREAD = 30000
 def latency():
     for rtt in (0,2,4,8):
-        for threads in  (1, 2, 4, 6, 8, 10):
-            LatencyExperiment(rtt, threads).run()
+        for threads in  (1, 2, 10, 50):
+            LatencyExperiment(
+                'single_controller_latency',
+                rtt,DEFAULT_NUM_OPERATIONS_PER_THREAD,threads).run()
 
-def fairness():
-    for num_ops in [100, 500, 1000]:
-        for wound_wait in (True, False):
-            print FairnessExperiment(wound_wait, num_ops).run()
+def latency_no_rtt():
+    for threads in  (1, 2, 5, 10, 20):
+        print '\nAbout to run latency_no_rtt threads %i\n' % threads
+        LatencyExperiment(
+            'single_controller_latency',
+            0,DEFAULT_NUM_OPERATIONS_PER_THREAD,threads).run()
+            
 
-def error():
-    for err in (10, 50, 90):
-        for switches in (1, 2, 4, 16):
-            ErrorExperiment(switches, err).run()
-
-
-THROUGHPUT_INPUTS = (1,5, 10, 20, 60)
+THROUGHPUT_NUM_SWITCHES = (1, 2, 5, 10, 20)
 def all_throughput():
-    for i in THROUGHPUT_INPUTS:
-        for task in ["NoContentionThroughput", "ContentionThroughput"]:
-                     #"NoContentionCoarseLockingThroughput",
-                     #"ContentionCoarseLockingThroughput"):
-            print ThroughputExperiment(i, task).run()
-
-
+    for num_switches in THROUGHPUT_NUM_SWITCHES:
+        print (
+            '\nRunning no contention throughput test with %i switches\n' %
+            num_switches)
         
-
+        ThroughputExperiment(
+            num_switches,'NoContentionThroughput',False,
+            1,DEFAULT_NUM_OPERATIONS_PER_THREAD).run()
+                             
