@@ -8,7 +8,7 @@ DEFAULT_JAR_DIRECTORY = 'experiments_jar_dir'
 CONF_FILE_LINES_PER_ENTRY = 4
 LISTENING_FOR_CONNECTIONS_ON_PORT = 31521
 DEFAULT_CONF_FILE = 'distributed.cfg'
-BETWEEN_NODE_WAIT_TIME_SECONDS = 2
+BETWEEN_NODE_WAIT_TIME_SECONDS = 4
 
 def produce_linear_topology_arguments(host_entry_list):
     '''
@@ -33,7 +33,7 @@ def produce_linear_topology_arguments(host_entry_list):
 
     if len(host_entry_list) != 0:
         # last controller in line does not try to connect to any other.
-        to_return.append('')
+        to_return.append('-1')
 
     return to_return
 
@@ -48,7 +48,7 @@ def produce_tree_topology_arguments(host_entry_list):
                / | \
               b  c  d
     '''
-    to_return = [''] * len(host_entry_list)
+    to_return = ['-1'] * len(host_entry_list)
     if len(host_entry_list) == 0:
         return to_return
     
@@ -73,15 +73,17 @@ def kill_all(host_entry_list,jar_name):
         waiting_on.wait()
 
         
-def run_linear_test(jar_name,local_filename,head_num_ops_to_run_per_switch,
+def run_linear_test(jar_name,local_filename_to_save_results_to,
+                    head_num_ops_to_run_per_switch,
                     command_string, max_experiment_wait_time_seconds,
                     num_switches_per_controller):
     '''
     @param {String} jar_name --- Does not include name of default jar
     directory.
 
-    @param {String} local_filename --- When experiments are finished
-    executing, save the results locally with this filename.
+    @param {String} local_filename_to_save_results_to --- When
+    experiments are finished executing, save the results locally with
+    this filename.
 
     @param {int} head_num_ops_to_run_per_switch --- The number of
     operations to run from master node.
@@ -143,8 +145,12 @@ def run_linear_test(jar_name,local_filename,head_num_ops_to_run_per_switch,
     kill_all(host_entry_list,jar_name)
     
     # collect result file from master
-    head = host_entry[0]
-    head.collect_result_file(foreign_output_filename,local_filename_to_save_to)
+    head = host_entry_list[0]
+    head.collect_result_file(
+        # note: this path concatenation works because we're assuming
+        # that we're running remotely on a *nix
+        DEFAULT_JAR_DIRECTORY + '/' + foreign_output_filename,
+        local_filename_to_save_results_to)
 
 
 class HostEntry(object):
