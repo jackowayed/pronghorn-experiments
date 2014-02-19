@@ -1,1 +1,6 @@
 basedir.txt
+*pyc
+*jar
+*pem
+*cfg
+*csv

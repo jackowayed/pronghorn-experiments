@@ -63,11 +63,15 @@ def produce_tree_topology_arguments(host_entry_list):
 
 def kill_all(host_entry_list,jar_name):
     # tear down all mininets and all experiments
+    waiting_on_list = []
     for host_entry in host_entry_list:
-        host_entry.stop_mininet()
-        host_entry.issue_pkill(jar_name)
+        waiting_on_list.append(host_entry.stop_mininet())
+        waiting_on_list.append(host_entry.issue_pkill(jar_name))
 
+    for waiting_on in waiting_on_list:
+        waiting_on.wait()
 
+        
 def run_linear_test(jar_name,local_filename,head_num_ops_to_run_per_switch,
                     command_string, max_experiment_wait_time_seconds):
     '''
@@ -152,11 +156,11 @@ class HostEntry(object):
         self.issue_ssh(ssh_cmd_str)
 
     def stop_mininet(self):
-        self.issue_pkill('mn')
+        return self.issue_pkill('mn')
         
     def issue_pkill(self,what_to_pkill):
         cmd_str = 'sudo pkill -f %s' % what_to_pkill
-        self.issue_ssh(cmd_str)
+        return self.issue_ssh(cmd_str)
 
     def scp_to_foreign(self,local_name,foreign_name,recursive,
                        block_until_completion=False):
@@ -197,11 +201,8 @@ class HostEntry(object):
             cmd_vec.extend(['-i',self.key_filename])
         cmd_vec.append('%s@%s' % (self.username,self.hostname))
         cmd_vec.append(ssh_cmd_str)
-        cmd_vec = ['ssh',
-                   '-o','StrictHostKeyChecking=no',
-                   '%s@%s' % (self.username,self.hostname),
-                   ssh_cmd_str]
         p = subprocess.Popen(cmd_vec)
+        
         if block_until_completion:
             p.wait()
         return p
