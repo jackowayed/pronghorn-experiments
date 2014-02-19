@@ -8,7 +8,7 @@ def run(local_folder_name):
 
     # first remove all existing directories, if they exist
     waiting_procs = []
-    ssh_cmd = 'sudo rm -rf %s ' DEFAULT_JAR_DIRECTORY
+    ssh_cmd = 'sudo rm -rf %s ' % DEFAULT_JAR_DIRECTORY
     for host_entry in host_entry_list:
         waiting_procs.append(host_entry.issue_ssh(ssh_cmd))
 
