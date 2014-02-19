@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from dist_util import read_conf_file, kill_all
+from dist_util import read_conf_file, kill_all, run_linear_test
 import time
 import sys
 
@@ -18,7 +18,8 @@ def linear_latency_test(local_filename_to_save_to,
         local_filename_to_save_to,
         num_ops_per_switch,
         'java -jar %s %s %i %i %s',
-        MAX_EXPERIMENT_WAIT_TIME_SECONDS)
+        MAX_EXPERIMENT_WAIT_TIME_SECONDS,
+        1)
 
 def kill_latency_experiments(host_entry_list=None):
     if host_entry_list is None:
@@ -46,5 +47,5 @@ if __name__ == '__main__':
         if sys.argv[1] == '-kill':
             kill_latency_experiments()
         else:
-            linear_latency_tests(sys.argv[1])
+            linear_latency_test(sys.argv[1])
     

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import subprocess
+import time
 
 DEFAULT_JAR_DIRECTORY = 'experiments_jar_dir'
 
@@ -73,7 +74,8 @@ def kill_all(host_entry_list,jar_name):
 
         
 def run_linear_test(jar_name,local_filename,head_num_ops_to_run_per_switch,
-                    command_string, max_experiment_wait_time_seconds):
+                    command_string, max_experiment_wait_time_seconds,
+                    num_switches_per_controller):
     '''
     @param {String} jar_name --- Does not include name of default jar
     directory.
@@ -97,6 +99,10 @@ def run_linear_test(jar_name,local_filename,head_num_ops_to_run_per_switch,
     @param {int} max_experiment_wait_time_seconds --- The time to wait
     for the experiment to finish before tearing everything down and
     copying the result file from head to local machine.
+
+    @param {int} num_switches_per_controller --- The number of
+    switches mininet should start up for each controller.
+    
     '''
     foreign_output_filename = 'output.csv'
     host_entry_list = read_conf_file()
@@ -116,7 +122,7 @@ def run_linear_test(jar_name,local_filename,head_num_ops_to_run_per_switch,
 
         ssh_cmd = 'cd %s; ' % DEFAULT_JAR_DIRECTORY
         ssh_cmd += (command_string %
-                    (LATENCY_TEST_JAR_NAME,
+                    (jar_name,
                      who_to_contact_args,
                      LISTENING_FOR_CONNECTIONS_ON_PORT,
                      num_ops_to_run_per_switch,
@@ -128,7 +134,7 @@ def run_linear_test(jar_name,local_filename,head_num_ops_to_run_per_switch,
     # now that we've started all nodes, start mininet on all nodes:
     # start in reverse order so that can ensure last node
     for host_entry in reversed(host_entry_list):
-        host_entry.start_mininet()
+        host_entry.start_mininet(num_switches_per_controller)
 
     # wait for experiment to complete
     time.sleep(max_experiment_wait_time_seconds)
@@ -152,7 +158,7 @@ class HostEntry(object):
         self.hostname = hostname
 
     def start_mininet(self,num_switches):
-        ssh_cmd = 'sudo mn --controller=remote --topo=linear,%i' % num_switches
+        ssh_cmd_str = 'sudo mn --controller=remote --topo=linear,%i' % num_switches
         self.issue_ssh(ssh_cmd_str)
 
     def stop_mininet(self):
