@@ -72,11 +72,35 @@ def kill_all(host_entry_list,jar_name):
     for waiting_on in waiting_on_list:
         waiting_on.wait()
 
-        
+
+class TopoType(object):
+    LINEAR,TREE = range(2)
+
 def run_linear_test(jar_name,local_filename_to_save_results_to,
                     head_num_ops_to_run_per_switch,
                     command_string, max_experiment_wait_time_seconds,
                     num_switches_per_controller):
+    return run_test(
+        jar_name,local_filename_to_save_results_to,
+        head_num_ops_to_run_per_switch,
+        command_string, max_experiment_wait_time_seconds,
+        num_switches_per_controller,TopoType.LINEAR)
+
+def run_tree_test(jar_name,local_filename_to_save_results_to,
+                  head_num_ops_to_run_per_switch,
+                  command_string, max_experiment_wait_time_seconds,
+                  num_switches_per_controller):
+    return run_test(
+        jar_name,local_filename_to_save_results_to,
+        head_num_ops_to_run_per_switch,
+        command_string, max_experiment_wait_time_seconds,
+        num_switches_per_controller,TopoType.TREE)
+
+
+def run_test(jar_name,local_filename_to_save_results_to,
+             head_num_ops_to_run_per_switch,
+             command_string, max_experiment_wait_time_seconds,
+             num_switches_per_controller,topo_type):
     '''
     @param {String} jar_name --- Does not include name of default jar
     directory.
@@ -104,16 +128,27 @@ def run_linear_test(jar_name,local_filename_to_save_results_to,
 
     @param {int} num_switches_per_controller --- The number of
     switches mininet should start up for each controller.
+
+    @param {TopoType} topo_type --- What type of topology to run.
     
     '''
     foreign_output_filename = 'output.csv'
     host_entry_list = read_conf_file()
-    linear_topo_args = produce_linear_topology_arguments(host_entry_list)
+
+
+    if topo_type == TopoType.LINEAR:
+        topo_args = produce_linear_topology_arguments(host_entry_list)
+    elif topo_type == TopoType.TREE:
+        topo_args = produce_tree_topology_arguments(host_entry_list)
+    else:
+        print ('\nRunning test for unknown topology type.  Quitting.  \n')
+        assert(False)
+
 
     # start sergeant on nodes in reverse order
     for i in range(len(host_entry_list) -1, -1, -1):
         host_entry_to_start = host_entry_list[i]
-        who_to_contact_args = linear_topo_args[i]
+        who_to_contact_args = topo_args[i]
 
         if i != 0:
             # non-head node
