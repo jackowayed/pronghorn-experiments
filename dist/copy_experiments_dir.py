@@ -6,6 +6,17 @@ from dist_util import read_conf_file,DEFAULT_JAR_DIRECTORY
 def run(local_folder_name):
     host_entry_list = read_conf_file()
 
+    # first remove all existing directories, if they exist
+    waiting_procs = []
+    ssh_cmd = 'sudo rm -rf %s ' DEFAULT_JAR_DIRECTORY
+    for host_entry in host_entry_list:
+        waiting_procs.append(host_entry.issue_ssh(ssh_cmd))
+
+    for proc in waiting_procs:
+        proc.wait()
+        
+
+    # second copy new one
     waiting_procs = []
     for host_entry in host_entry_list:
         waiting_procs.append(host_entry.scp_to_foreign(
