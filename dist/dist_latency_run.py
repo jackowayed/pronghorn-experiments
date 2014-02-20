@@ -15,6 +15,7 @@ DEFAULT_NUM_OPS_TO_RUN = 30000
 MAX_EXPERIMENT_WAIT_TIME_SECONDS = 60
 
 def linear_latency_test(local_filename_to_save_to,
+                        num_switches_per_controller,
                         num_ops_per_switch=DEFAULT_NUM_OPS_TO_RUN):
     run_linear_test(
         LATENCY_TEST_JAR_NAME,
@@ -22,9 +23,10 @@ def linear_latency_test(local_filename_to_save_to,
         num_ops_per_switch,
         'java -jar %s %s %i %i %s',
         MAX_EXPERIMENT_WAIT_TIME_SECONDS,
-        1)
+        num_switches_per_controller)
 
 def tree_latency_test(local_filename_to_save_to,
+                      num_switches_per_controller,
                       num_ops_per_switch=DEFAULT_NUM_OPS_TO_RUN):
     run_tree_test(
         LATENCY_TEST_JAR_NAME,
@@ -32,7 +34,7 @@ def tree_latency_test(local_filename_to_save_to,
         num_ops_per_switch,
         'java -jar %s %s %i %i %s',
         MAX_EXPERIMENT_WAIT_TIME_SECONDS,
-        1)
+        num_switches_per_controller)
 
     
 def kill_latency_experiments(host_entry_list=None):
@@ -56,6 +58,12 @@ Use this script to run distributed latency experiments on ec2 nodes.
         '--out',
         help='Name of file to save results to locally.')
 
+    parser.add_argument(
+        '--num_switches',
+        type=int, default=1,
+        help='Number of switches to run per controller.')
+
+    
     args = parser.parse_args()
     
 
@@ -72,10 +80,12 @@ Use this script to run distributed latency experiments on ec2 nodes.
             print '\nError: if not killing, require topology.\n'
             return
 
+        num_switches_per_controller = args.num_switches
+        
         if topo == 'linear':
-            linear_latency_test(output_filename)
+            linear_latency_test(output_filename,num_switches_per_controller)
         elif topo == 'tree':
-            tree_latency_test(output_filename)
+            tree_latency_test(output_filename,num_switches_per_controller)
         #### DEBUG
         else:
             print ('\nUnexpected topo type\n')
