@@ -12,7 +12,7 @@ LATENCY_TEST_JAR_NAME = 'multi_controller_latency.jar'
 
 DEFAULT_NUM_OPS_TO_RUN = 30000
 
-MAX_EXPERIMENT_WAIT_TIME_SECONDS = 60
+MAX_EXPERIMENT_WAIT_TIME_SECONDS = 450
 
 def linear_latency_test(local_filename_to_save_to,
                         num_switches_per_controller,
