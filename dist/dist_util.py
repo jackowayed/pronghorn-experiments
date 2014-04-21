@@ -79,7 +79,8 @@ class TopoType(object):
 def run_linear_test(jar_name,local_filename_to_save_results_to,
                     head_num_ops_to_run_per_switch,
                     command_string, max_experiment_wait_time_seconds,
-                    num_switches_per_controller):
+                    num_switches_per_controller,
+                    special_last_command_string=None):
     return run_test(
         jar_name,local_filename_to_save_results_to,
         head_num_ops_to_run_per_switch,
@@ -89,18 +90,21 @@ def run_linear_test(jar_name,local_filename_to_save_results_to,
 def run_tree_test(jar_name,local_filename_to_save_results_to,
                   head_num_ops_to_run_per_switch,
                   command_string, max_experiment_wait_time_seconds,
-                  num_switches_per_controller):
+                  num_switches_per_controller,
+                  special_last_command_string=None):
     return run_test(
         jar_name,local_filename_to_save_results_to,
         head_num_ops_to_run_per_switch,
         command_string, max_experiment_wait_time_seconds,
-        num_switches_per_controller,TopoType.TREE)
+        num_switches_per_controller,TopoType.TREE,
+        special_last_command_string)
 
 
 def run_test(jar_name,local_filename_to_save_results_to,
              head_num_ops_to_run_per_switch,
              command_string, max_experiment_wait_time_seconds,
-             num_switches_per_controller,topo_type):
+             num_switches_per_controller,topo_type,
+             special_last_command_string=None):
     '''
     @param {String} jar_name --- Does not include name of default jar
     directory.
@@ -130,6 +134,13 @@ def run_test(jar_name,local_filename_to_save_results_to,
     switches mininet should start up for each controller.
 
     @param {TopoType} topo_type --- What type of topology to run.
+
+    @param {string or None} special_last_command_string --- A few
+    experiments require the last node in the linear topo or the last
+    node in the tree topo to have a slightly different command string.
+    In these cases, specify special_last_command_string as non-None
+    (with same format as command_string), and will run the last node
+    with these arguments.
     
     '''
     foreign_output_filename = 'output.csv'
@@ -150,15 +161,24 @@ def run_test(jar_name,local_filename_to_save_results_to,
         host_entry_to_start = host_entry_list[i]
         who_to_contact_args = topo_args[i]
 
+        command_string_to_use = command_string        
         if i != 0:
             # non-head node
             num_ops_to_run_per_switch = 0
+
+            # check if this is the last worker node.  if it is, may
+            # need to use substitute command string.
+            if i == (len(host_entry_list) -1):
+                if special_last_command_string is not None:
+                    command_string_to_use = special_last_command_string
+            
         else:
             # head            
             num_ops_to_run_per_switch = head_num_ops_to_run_per_switch
 
+            
         ssh_cmd = 'cd %s; sudo ' % DEFAULT_JAR_DIRECTORY
-        ssh_cmd += (command_string %
+        ssh_cmd += (command_string_to_use %
                     (jar_name,
                      who_to_contact_args,
                      LISTENING_FOR_CONNECTIONS_ON_PORT,
