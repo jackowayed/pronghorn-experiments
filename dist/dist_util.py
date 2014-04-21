@@ -157,7 +157,7 @@ def run_test(jar_name,local_filename_to_save_results_to,
             # head            
             num_ops_to_run_per_switch = head_num_ops_to_run_per_switch
 
-        ssh_cmd = 'cd %s; ' % DEFAULT_JAR_DIRECTORY
+        ssh_cmd = 'cd %s; sudo ' % DEFAULT_JAR_DIRECTORY
         ssh_cmd += (command_string %
                     (jar_name,
                      who_to_contact_args,
