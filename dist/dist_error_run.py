@@ -10,8 +10,10 @@ from dist_util import run_tree_test
 
 ERROR_TEST_JAR_NAME = 'multi_controller_error.jar'
 
-DEFAULT_NUM_OPS_TO_RUN = 5000
+#DEFAULT_NUM_OPS_TO_RUN = 5000
+DEFAULT_NUM_OPS_TO_RUN = 50
 DEFAULT_FAILURE_PROBABILITY = .05;
+# MAX_EXPERIMENT_WAIT_TIME_SECONDS = 450
 MAX_EXPERIMENT_WAIT_TIME_SECONDS = 450
 
 def linear_error_test(local_filename_to_save_to,
