@@ -85,7 +85,8 @@ def run_linear_test(jar_name,local_filename_to_save_results_to,
         jar_name,local_filename_to_save_results_to,
         head_num_ops_to_run_per_switch,
         command_string, max_experiment_wait_time_seconds,
-        num_switches_per_controller,TopoType.LINEAR)
+        num_switches_per_controller,TopoType.LINEAR,
+        special_last_command_string)
 
 def run_tree_test(jar_name,local_filename_to_save_results_to,
                   head_num_ops_to_run_per_switch,
@@ -165,18 +166,15 @@ def run_test(jar_name,local_filename_to_save_results_to,
         if i != 0:
             # non-head node
             num_ops_to_run_per_switch = 0
-
             # check if this is the last worker node.  if it is, may
-            # need to use substitute command string.
+            # need to use substitute command string.            
             if i == (len(host_entry_list) -1):
                 if special_last_command_string is not None:
                     command_string_to_use = special_last_command_string
-            
         else:
             # head            
             num_ops_to_run_per_switch = head_num_ops_to_run_per_switch
 
-            
         ssh_cmd = 'cd %s; sudo ' % DEFAULT_JAR_DIRECTORY
         ssh_cmd += (command_string_to_use %
                     (jar_name,
