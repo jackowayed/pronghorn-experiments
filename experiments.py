@@ -142,7 +142,7 @@ class ErrorExperiment(Experiment):
             task_name,
             "%i_switches-%f_failure" % (non_failure_switches,failure_probability))
         arguments = [num_ops_to_run,failure_probability]
-        Experiment.__init__(self, topo, jar_name, output_file,rtt, arguments)
+        Experiment.__init__(self, topo, jar_name, output_file,0, arguments)
         
             
 class LatencyExperiment(Experiment):
