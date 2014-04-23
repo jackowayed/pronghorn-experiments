@@ -172,7 +172,13 @@ class LatencyExperiment(Experiment):
 class ThroughputExperiment(Experiment):
     def __init__(
         self, num_switches, task_name, coarse_locking_boolean,
-        num_threads_per_switch,num_ops_per_thread):
+        num_threads_per_switch,num_ops_per_thread,filename_num_label=None):
+        '''
+        @param {String} filename_label --- how experiment should label
+        file, if not None.  (If it is None, use num_switches.)
+        '''
+        if filename_num_label is None:
+            filename_num_label = num_switches
         
         topo = FlatTopo(num_switches)
         jar_name = 'single_controller_throughput.jar'
@@ -185,7 +191,7 @@ class ThroughputExperiment(Experiment):
         # include ms since epoch time in fname.
         # DO NOT create two tests with same task and #switches at same
         # time, because this is timestamp of creation, not execution.
-        output_filename = output_data_fname(task_name, "%d"  % num_switches)
+        output_filename = output_data_fname(task_name, "%d"  % filename_num_label)
 
         Experiment.__init__(
             self,topo,jar_name,output_filename,0,arguments)
@@ -262,7 +268,8 @@ def throughput_contention():
     for num_threads in THROUGHPUT_CONTENTION_NUM_THREADS:
         ThroughputExperiment(
             1,'ContentionThroughput',False,
-            num_threads,DEFAULT_NUM_OPERATIONS_PER_THREAD).run()
+            num_threads,DEFAULT_NUM_OPERATIONS_PER_THREAD,
+            num_threads).run()
         
 def error_experiment():
     ErrorExperiment('ErrorExperiment',30000,10,.05).run()
