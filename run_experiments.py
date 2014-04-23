@@ -2,6 +2,9 @@
 
 from experiments import *
 
+latency_no_rtt()
+latency_rtt()
+
 #latency()
 # latency_no_rtt()
 # fairness()
@@ -11,5 +14,5 @@ from experiments import *
 # all_throughput()
 #ErrorExperiment(50, 16).run()
 
-speculation_across_rtts()
-speculation_across_ftable_size()
+# speculation_across_rtts()
+# speculation_across_ftable_size()

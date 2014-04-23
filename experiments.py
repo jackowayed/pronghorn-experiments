@@ -204,6 +204,13 @@ def latency():
                 'single_controller_latency',
                 rtt,DEFAULT_NUM_OPERATIONS_PER_THREAD,threads).run()
 
+def latency_rtt():
+    for rtt in (0,2,4,8):
+        LatencyExperiment(
+            'single_controller_latency',
+            rtt,DEFAULT_NUM_OPERATIONS_PER_THREAD,1).run()
+
+            
 def latency_no_rtt():
     for threads in  (1, 2, 5, 10, 20):
         print '\nAbout to run latency_no_rtt threads %i\n' % threads
@@ -212,7 +219,7 @@ def latency_no_rtt():
             0,DEFAULT_NUM_OPERATIONS_PER_THREAD,threads).run()
             
 
-THROUGHPUT_NUM_SWITCHES = (1, 2, 5, 10, 20)
+THROUGHPUT_NUM_SWITCHES = (1, 5, 10, 20, 60)
 def all_throughput():
     for num_switches in THROUGHPUT_NUM_SWITCHES:
         print (
