@@ -10,7 +10,7 @@ from dist_util import run_tree_test
 
 LATENCY_TEST_JAR_NAME = 'multi_controller_latency.jar'
 
-DEFAULT_NUM_OPS_TO_RUN = 30000
+DEFAULT_NUM_OPS_TO_RUN = 10000
 MAX_EXPERIMENT_WAIT_TIME_SECONDS = 600
 
 # DEFAULT_NUM_OPS_TO_RUN = 3000
