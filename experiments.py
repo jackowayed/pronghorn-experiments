@@ -143,6 +143,22 @@ class ErrorExperiment(Experiment):
             "%i_switches-%f_failure" % (non_failure_switches,failure_probability))
         arguments = [num_ops_to_run,failure_probability]
         Experiment.__init__(self, topo, jar_name, output_file,0, arguments)
+
+class FairnessExperiment(Experiment):
+    def __init__(self, task_name,num_ops_to_run,wound_wait):
+
+        # should be True if using wound/wait for deadlock avoidance.
+        # for ralph algo, should be false.
+        wound_wait_arg = 'true' if wound_wait else 'false'
+        
+        topo = FlatTopo(switches=1)
+        jar_name = 'single_controller_fairness.jar'
+        output_file = output_data_fname(
+            task_name,
+            "%s" % (wound_wait_arg))
+        arguments = [wound_wait_arg,num_ops_to_run]
+        Experiment.__init__(self, topo, jar_name, output_file,0, arguments)
+
         
             
 class LatencyExperiment(Experiment):
@@ -244,8 +260,13 @@ def all_throughput():
 
 def error_experiment():
     ErrorExperiment('ErrorExperiment',30000,10,.05).run()
-        
 
+def fairness_experiment():
+    FairnessExperiment('FairnessExperiment',30000,True).run()
+    FairnessExperiment('FairnessExperiment',30000,False).run()
+
+
+    
 # run speculation and no speculation tests as we vary the rtt between
 # switch and controller
 def speculation_across_rtts():

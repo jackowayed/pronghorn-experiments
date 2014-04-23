@@ -11,9 +11,9 @@ from dist_util import run_tree_test
 FAIRNESS_TEST_JAR_NAME = 'multi_controller_fairness.jar'
 
 #DEFAULT_NUM_OPS_TO_RUN = 5000
-DEFAULT_NUM_OPS_TO_RUN = 200
+DEFAULT_NUM_OPS_TO_RUN = 10000
 # MAX_EXPERIMENT_WAIT_TIME_SECONDS = 450
-MAX_EXPERIMENT_WAIT_TIME_SECONDS = 450
+MAX_EXPERIMENT_WAIT_TIME_SECONDS = 10000
 
 def linear_fairness_test(local_filename_to_save_to,
                          num_switches_per_controller,

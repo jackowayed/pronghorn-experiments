@@ -2,8 +2,8 @@
 
 from experiments import *
 
-latency_no_rtt()
-latency_rtt()
+# latency_no_rtt()
+# latency_rtt()
 
 #latency()
 # latency_no_rtt()
@@ -13,7 +13,7 @@ latency_rtt()
 # all_throughput()
 
 
-# error_experiment
-
+# error_experiment()
+fairness_experiment()
 # speculation_across_rtts()
 # speculation_across_ftable_size()
