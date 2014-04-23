@@ -133,7 +133,18 @@ class Experiment:
             # exists
             None
 
-
+class ErrorExperiment(Experiment):
+    def __init__(self, task_name,num_ops_to_run,
+                 non_failure_switches,failure_probability):
+        topo = FlatTopo(switches=non_failure_switches)
+        jar_name = 'single_controller_error.jar'
+        output_file = output_data_fname(
+            task_name,
+            "%i_switches-%f_failure" % (non_failure_switches,failure_probability))
+        arguments = [num_ops_to_run,failure_probability]
+        Experiment.__init__(self, topo, jar_name, output_file,rtt, arguments)
+        
+            
 class LatencyExperiment(Experiment):
     def __init__(self, task_name,rtt, num_ops_per_thread, num_threads):
         topo = FlatTopo(switches=1)
@@ -231,6 +242,9 @@ def all_throughput():
             1,DEFAULT_NUM_OPERATIONS_PER_THREAD).run()
                              
 
+def error_experiment():
+    ErrorExperiment('ErrorExperiment',30000,10,.05).run()
+        
 
 # run speculation and no speculation tests as we vary the rtt between
 # switch and controller

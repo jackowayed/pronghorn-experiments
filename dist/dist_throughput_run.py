@@ -10,9 +10,9 @@ from dist_util import run_tree_test
 
 THROUGHPUT_TEST_JAR_NAME = 'multi_controller_throughput.jar'
 
-DEFAULT_NUM_OPS_TO_RUN = 5000
-
-MAX_EXPERIMENT_WAIT_TIME_SECONDS = 450
+DEFAULT_NUM_OPS_TO_RUN = 10000
+# DEFAULT_NUM_OPS_TO_RUN = 1000
+MAX_EXPERIMENT_WAIT_TIME_SECONDS = 3000
 
 def linear_throughput_test(local_filename_to_save_to,
                         num_switches_per_controller,

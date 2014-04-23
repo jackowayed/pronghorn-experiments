@@ -10,9 +10,10 @@ latency_rtt()
 # fairness()
 #for i in range(4):
 #    all_throughput()
-#error()
 # all_throughput()
-#ErrorExperiment(50, 16).run()
+
+
+# error_experiment
 
 # speculation_across_rtts()
 # speculation_across_ftable_size()
