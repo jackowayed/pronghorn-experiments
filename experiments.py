@@ -246,9 +246,9 @@ def latency_no_rtt():
             0,DEFAULT_NUM_OPERATIONS_PER_THREAD,threads).run()
             
 
-THROUGHPUT_NUM_SWITCHES = (1, 5, 10, 20, 60)
-def all_throughput():
-    for num_switches in THROUGHPUT_NUM_SWITCHES:
+THROUGHPUT_NO_CONTENTION_NUM_SWITCHES = (1, 5, 10, 20, 60)
+def throughput_no_contention():
+    for num_switches in THROUGHPUT_NO_CONTENTION_NUM_SWITCHES:
         print (
             '\nRunning no contention throughput test with %i switches\n' %
             num_switches)
@@ -257,7 +257,13 @@ def all_throughput():
             num_switches,'NoContentionThroughput',False,
             1,DEFAULT_NUM_OPERATIONS_PER_THREAD).run()
                              
-
+THROUGHPUT_CONTENTION_NUM_THREADS = (1,2,4,8,10)
+def throughput_contention():
+    for num_threads in THROUGHPUT_CONTENTION_NUM_THREADS:
+        ThroughputExperiment(
+            1,'ContentionThroughput',False,
+            num_threads,DEFAULT_NUM_OPERATIONS_PER_THREAD).run()
+        
 def error_experiment():
     ErrorExperiment('ErrorExperiment',30000,10,.05).run()
 

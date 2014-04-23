@@ -8,12 +8,12 @@ from experiments import *
 #latency()
 # latency_no_rtt()
 # fairness()
-#for i in range(4):
-#    all_throughput()
-# all_throughput()
 
+
+throughput_contention()
+# throughput_no_contention()
 
 # error_experiment()
-fairness_experiment()
+# fairness_experiment()
 # speculation_across_rtts()
 # speculation_across_ftable_size()
