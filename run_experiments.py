@@ -2,15 +2,13 @@
 
 from experiments import *
 
-# latency_no_rtt()
+# latency_no_contention()
 # latency_rtt()
 
-#latency()
-# latency_no_rtt()
 # fairness()
 
 
-throughput_contention()
+# throughput_contention()
 # throughput_no_contention()
 
 # error_experiment()

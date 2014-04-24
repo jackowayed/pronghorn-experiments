@@ -30,6 +30,13 @@ def reset_start():
 def set_rtt(t_ms):
     """Sets RTT between switches and controller.
     Exception on failure"""
+
+    if (t_ms % 2) != 0:
+        print '\nCannot run.  Require even number of rtt when setting rtt\n'
+        assert False
+    t_ms = t_ms /2
+
+    
     subprocess.call(["tc", "qdisc", "add", "dev", "lo", "root",
                      "handle", "1:", "prio"])
     # Delete rule in case it's there, ignore failure in case it's not
@@ -230,13 +237,6 @@ class SpeculationExperiment(Experiment):
         
 
 DEFAULT_NUM_OPERATIONS_PER_THREAD = 30000
-def latency():
-    for rtt in (0,2,4,8):
-        for threads in  (1, 2, 10, 50):
-            LatencyExperiment(
-                'single_controller_latency',
-                rtt,DEFAULT_NUM_OPERATIONS_PER_THREAD,threads).run()
-
 def latency_rtt():
     for rtt in (0,2,4,8):
         LatencyExperiment(
@@ -244,12 +244,12 @@ def latency_rtt():
             rtt,DEFAULT_NUM_OPERATIONS_PER_THREAD,1).run()
 
             
-def latency_no_rtt():
-    for threads in  (1, 2, 5, 10, 20):
+def latency_contention():
+    for threads in  (1, 2, 4, 6, 8, 10):
         print '\nAbout to run latency_no_rtt threads %i\n' % threads
         LatencyExperiment(
             'single_controller_latency',
-            0,DEFAULT_NUM_OPERATIONS_PER_THREAD,threads).run()
+            2,DEFAULT_NUM_OPERATIONS_PER_THREAD,threads).run()
             
 
 THROUGHPUT_NO_CONTENTION_NUM_SWITCHES = (1, 5, 10, 20, 60)
