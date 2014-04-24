@@ -2,8 +2,9 @@
 
 from experiments import *
 
-# latency_no_contention()
+# latency_contention()
 # latency_rtt()
+# read_only_experiment()
 
 # fairness()
 

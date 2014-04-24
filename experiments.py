@@ -203,6 +203,22 @@ class ThroughputExperiment(Experiment):
         Experiment.__init__(
             self,topo,jar_name,output_filename,0,arguments)
 
+class ReadOnlyExperiment(Experiment):
+    def __init__(self, task_name,num_ops):
+        topo = FlatTopo(1)
+        jar_name = 'read_only_latency.jar'
+
+        arguments = [str(num_ops)]
+        
+        # include ms since epoch time in fname.
+        # DO NOT create two tests with same task and #switches at same
+        # time, because this is timestamp of creation, not execution.
+        output_filename = output_data_fname(task_name)
+
+        Experiment.__init__(
+            self,topo,jar_name,output_filename,0,arguments)
+
+        
 class SpeculationExperiment(Experiment):
     def __init__(self, task_name,should_speculate,rtt,flow_table_entries,
                  num_ops_per_thread):
@@ -279,6 +295,9 @@ def fairness_experiment():
     FairnessExperiment('FairnessExperiment',30000,False).run()
 
 
+def read_only_experiment():
+    ReadOnlyExperiment('ReadOnly',30000).run()
+    
     
 # run speculation and no speculation tests as we vary the rtt between
 # switch and controller
