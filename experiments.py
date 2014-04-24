@@ -278,7 +278,14 @@ def throughput_no_contention():
         ThroughputExperiment(
             num_switches,'NoContentionThroughput',False,
             1,DEFAULT_NUM_OPERATIONS_PER_THREAD).run()
-                             
+        
+def throughput_no_contention_coarse_lock():
+    for num_switches in THROUGHPUT_NO_CONTENTION_NUM_SWITCHES:
+        ThroughputExperiment(
+            num_switches,'CoarseNoContentionThroughput',True,
+            1,DEFAULT_NUM_OPERATIONS_PER_THREAD).run()
+
+        
 THROUGHPUT_CONTENTION_NUM_THREADS = (1,2,4,8,10)
 def throughput_contention():
     for num_threads in THROUGHPUT_CONTENTION_NUM_THREADS:
