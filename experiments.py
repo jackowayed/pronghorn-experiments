@@ -96,7 +96,10 @@ class setup():
 class Experiment:
     def __init__(
         self, topology, jar_name, output_file,rtt=0,
-        arguments=None, num_controllers=1):
+        arguments=None,
+        # default is to not collect statistics
+        collect_stats_period_ms = -1,
+        num_controllers=1):
         
         self.topology = topology
         self.fq_jar = os.path.join(EXPERIMENTS_JAR_DIR,jar_name)
@@ -106,6 +109,7 @@ class Experiment:
         self.arguments = []
         if arguments is not None:
             self.arguments = arguments
+        self.arguments.append(str(collect_stats_period_ms))
         self.arguments.append(self.output_file)
         self.arguments = map(
             lambda to_stringify: str(to_stringify),
