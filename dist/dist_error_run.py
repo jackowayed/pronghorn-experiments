@@ -24,7 +24,7 @@ def linear_error_test(local_filename_to_save_to,
         ERROR_TEST_JAR_NAME,
         local_filename_to_save_to,
         num_ops_per_switch,
-        'java -jar %s %s %i %i ' + str(failure_probability) +' %s',
+        'java -jar %s %s %i %i ' + str(failure_probability) +' -1 %s',
         MAX_EXPERIMENT_WAIT_TIME_SECONDS,
         num_switches_per_controller)
 
@@ -36,7 +36,7 @@ def tree_error_test(local_filename_to_save_to,
         ERROR_TEST_JAR_NAME,
         local_filename_to_save_to,
         num_ops_per_switch,
-        'java -jar %s %s %i %i ' + str(failure_probability) + ' %s',
+        'java -jar %s %s %i %i ' + str(failure_probability) + ' -1 %s',
         MAX_EXPERIMENT_WAIT_TIME_SECONDS,
         num_switches_per_controller)
 

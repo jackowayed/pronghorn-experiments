@@ -299,7 +299,10 @@ def throughput_contention():
             num_threads).run()
         
 def error_experiment():
-    ErrorExperiment('ErrorExperiment',30000,10,.05).run()
+    ErrorExperiment('ErrorExperiment',1000,10,.01).run()
+    ErrorExperiment('ErrorExperiment',1000,10,.05).run()
+    ErrorExperiment('ErrorExperiment',1000,10,.1).run()
+
 
 def fairness_experiment():
     FairnessExperiment('FairnessExperiment',30000,True).run()

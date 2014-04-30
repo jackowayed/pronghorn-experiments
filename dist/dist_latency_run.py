@@ -25,7 +25,7 @@ def linear_latency_test(local_filename_to_save_to,
         LATENCY_TEST_JAR_NAME,
         local_filename_to_save_to,
         num_ops_per_switch,
-        'java -jar %s %s %i %i %s',
+        'java -jar %s %s %i %i -1 %s',
         MAX_EXPERIMENT_WAIT_TIME_SECONDS,
         num_switches_per_controller)
 
@@ -36,7 +36,7 @@ def tree_latency_test(local_filename_to_save_to,
         LATENCY_TEST_JAR_NAME,
         local_filename_to_save_to,
         num_ops_per_switch,
-        'java -jar %s %s %i %i %s',
+        'java -jar %s %s %i %i -1 %s',
         MAX_EXPERIMENT_WAIT_TIME_SECONDS,
         num_switches_per_controller)
 

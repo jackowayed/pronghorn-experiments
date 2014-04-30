@@ -266,7 +266,7 @@ class HostEntry(object):
             cmd_vec.extend(['-i',self.key_filename])
         cmd_vec.append('%s@%s' % (self.username,self.hostname))
         cmd_vec.append(ssh_cmd_str)
-        p = subprocess.Popen(cmd_vec)
+        p = subprocess.Popen(cmd_vec,stderr=subprocess.STDOUT)
         
         if block_until_completion:
             p.wait()
