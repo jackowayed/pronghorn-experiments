@@ -254,7 +254,20 @@ class SpeculationExperiment(Experiment):
         arguments = [num_ops_per_thread,speculation_arg,flow_table_entries]
         Experiment.__init__(self, topo, jar_name, output_file,rtt, arguments)
 
+
+class ThroughputSpeculativeExperiment(Experiment):
+    def __init__(self, task_name,num_switches,num_ops,should_speculate):
+        '''
+        '''
+        topo = FlatTopo(switches=num_switches)
+        jar_name = 'single_controller_speculation_throughput.jar'
+
+        speculation_arg = 'true' if should_speculate else 'false'
         
+        output_file = output_data_fname(
+            task_name,"%s-%i" % (speculation_arg,num_switches))
+        arguments = [num_ops,speculation_arg]
+        Experiment.__init__(self, topo, jar_name, output_file,0, arguments)
 
 DEFAULT_NUM_OPERATIONS_PER_THREAD = 30000
 def latency_rtt():
@@ -311,7 +324,15 @@ def fairness_experiment():
 
 def read_only_experiment():
     ReadOnlyExperiment('ReadOnly',30000).run()
-    
+
+
+THROUGHPUT_SPECULATIVE_NUM_SWITCHES = (2,16,32,64)
+def throughput_speculative():
+    for num_switches in THROUGHPUT_SPECULATIVE_NUM_SWITCHES:
+        ThroughputSpeculativeExperiment(
+            'ThroughputSpeculativeExperiment',num_switches,30000,True).run()
+        ThroughputSpeculativeExperiment(
+            'ThroughputSpeculativeExperiment',num_switches,30000,False).run()
     
 # run speculation and no speculation tests as we vary the rtt between
 # switch and controller
