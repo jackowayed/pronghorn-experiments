@@ -222,6 +222,26 @@ class ReadOnlyExperiment(Experiment):
         Experiment.__init__(
             self,topo,jar_name,output_filename,0,arguments)
 
+class ReadOnlyThroughputExperiment(Experiment):
+    def __init__(self, task_name,num_switches,num_ops,
+                 num_warmup_ops,num_threads_per_switch):
+        topo = FlatTopo(num_switches)
+        jar_name = 'read_only_throughput.jar'
+
+        arguments = [
+            str(num_ops), str(num_warmup_ops),
+            str(num_threads_per_switch)]
+        
+        # include ms since epoch time in fname.
+        # DO NOT create two tests with same task and #switches at same
+        # time, because this is timestamp of creation, not execution.
+        output_filename = output_data_fname(
+            task_name,
+            'read_only_throughput-%i-%i' % (num_switches,num_threads_per_switch))
+
+        Experiment.__init__(
+            self,topo,jar_name,output_filename,0,arguments)
+
         
 class SpeculationExperiment(Experiment):
     def __init__(self, task_name,should_speculate,rtt,flow_table_entries,
@@ -325,7 +345,17 @@ def fairness_experiment():
 def read_only_experiment():
     ReadOnlyExperiment('ReadOnly',30000).run()
 
-
+READ_ONLY_THROUGHPUT_NUM_SWITCHES = (1,2,3,4,5,6)
+READ_ONLY_THROUGHPUT_NUM_THREADS = (1,2,3,4,5,6)
+READ_ONLY_THROUGHPUT_NUM_WARMUP_OPS = 50000
+READ_ONLY_THROUGHPUT_NUM_OPS = 100000
+def read_only_throughput():
+    for num_switches in READ_ONLY_THROUGHPUT_NUM_SWITCHES:
+        for num_threads in READ_ONLY_THROUGHPUT_NUM_THREADS:
+            ReadOnlyThroughputExperiment(
+                'ReadOnlyThroughput',num_switches,READ_ONLY_THROUGHPUT_NUM_OPS,
+                READ_ONLY_THROUGHPUT_NUM_WARMUP_OPS,num_threads).run()
+            
 THROUGHPUT_SPECULATIVE_NUM_SWITCHES = (2,16,32,64)
 def throughput_speculative():
     for num_switches in THROUGHPUT_SPECULATIVE_NUM_SWITCHES:

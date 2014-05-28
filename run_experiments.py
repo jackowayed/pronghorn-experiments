@@ -7,7 +7,8 @@ from experiments import *
 # read_only_experiment()
 # throughput_no_contention_coarse_lock()
 # fairness()
-throughput_speculative()
+# throughput_speculative()
+read_only_throughput()
 
 # throughput_contention()
 # throughput_no_contention()
