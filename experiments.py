@@ -173,17 +173,19 @@ class FairnessExperiment(Experiment):
         
             
 class LatencyExperiment(Experiment):
-    def __init__(self, task_name,rtt, num_ops_per_thread, num_threads):
+    def __init__(self, task_name,rtt, num_ops_per_thread,
+                 num_warmup_ops_per_thread,num_threads):
         topo = FlatTopo(switches=1)
         jar_name = 'single_controller_latency.jar'
         output_file = output_data_fname(task_name,"%d-%d" % (rtt * 1000, num_threads))
-        arguments = [num_ops_per_thread,num_threads]
+        arguments = [num_ops_per_thread,num_warmup_ops_per_thread,num_threads]
         Experiment.__init__(self, topo, jar_name, output_file,rtt, arguments)
 
 class ThroughputExperiment(Experiment):
     def __init__(
         self, num_switches, task_name, coarse_locking_boolean,
-        num_threads_per_switch,num_ops_per_thread,filename_num_label=None):
+        num_threads_per_switch,num_ops_per_thread,
+        num_warmup_ops_per_thread,filename_num_label=None):
         '''
         @param {String} filename_label --- how experiment should label
         file, if not None.  (If it is None, use num_switches.)
@@ -196,8 +198,8 @@ class ThroughputExperiment(Experiment):
         javaized_coarse_locking = 'true' if coarse_locking_boolean else 'false'
 
         arguments = [
-            str(num_ops_per_thread),javaized_coarse_locking,
-            str(num_threads_per_switch)]
+            str(num_ops_per_thread),str(num_warmup_ops_per_thread),
+            javaized_coarse_locking,str(num_threads_per_switch)]
         
         # include ms since epoch time in fname.
         # DO NOT create two tests with same task and #switches at same
@@ -207,12 +209,12 @@ class ThroughputExperiment(Experiment):
         Experiment.__init__(
             self,topo,jar_name,output_filename,0,arguments)
 
-class ReadOnlyExperiment(Experiment):
-    def __init__(self, task_name,num_ops):
+class ReadOnlyLatencyExperiment(Experiment):
+    def __init__(self, task_name,num_ops,num_warmup_ops):
         topo = FlatTopo(1)
         jar_name = 'read_only_latency.jar'
 
-        arguments = [str(num_ops)]
+        arguments = [str(num_ops),str(num_warmup_ops)]
         
         # include ms since epoch time in fname.
         # DO NOT create two tests with same task and #switches at same
@@ -290,11 +292,13 @@ class ThroughputSpeculativeExperiment(Experiment):
         Experiment.__init__(self, topo, jar_name, output_file,0, arguments)
 
 DEFAULT_NUM_OPERATIONS_PER_THREAD = 30000
+DEFAULT_WARMUP_OPERAIONTS_PER_THREAD = 30000
 def latency_rtt():
     for rtt in (0,2,4,8):
         LatencyExperiment(
             'single_controller_latency_rtt',
-            rtt,DEFAULT_NUM_OPERATIONS_PER_THREAD,1).run()
+            rtt,DEFAULT_NUM_OPERATIONS_PER_THREAD,
+            DEFAULT_WARMUP_OPERATIONS_PER_THREAD,1).run()
 
             
 def latency_contention():
@@ -302,7 +306,8 @@ def latency_contention():
         print '\nAbout to run latency_no_rtt threads %i\n' % threads
         LatencyExperiment(
             'single_controller_latency_contention',
-            2,DEFAULT_NUM_OPERATIONS_PER_THREAD,threads).run()
+            2,DEFAULT_NUM_OPERATIONS_PER_THREAD,
+            DEFAULT_WARMUP_OPERATIONS_PER_THREAD,threads).run()
             
 
 THROUGHPUT_NO_CONTENTION_NUM_SWITCHES = (1, 5, 10, 20, 60)
@@ -314,13 +319,15 @@ def throughput_no_contention():
         
         ThroughputExperiment(
             num_switches,'NoContentionThroughput',False,
-            1,DEFAULT_NUM_OPERATIONS_PER_THREAD).run()
+            1,DEFAULT_NUM_OPERATIONS_PER_THREAD,
+            DEFAULT_WARMUP_OPERATIONS_PER_THREAD).run()
         
 def throughput_no_contention_coarse_lock():
     for num_switches in THROUGHPUT_NO_CONTENTION_NUM_SWITCHES:
         ThroughputExperiment(
             num_switches,'CoarseNoContentionThroughput',True,
-            1,DEFAULT_NUM_OPERATIONS_PER_THREAD).run()
+            1,DEFAULT_NUM_OPERATIONS_PER_THREAD,
+            DEFAULT_WARMUP_OPERATIONS_PER_THREAD).run()
 
         
 THROUGHPUT_CONTENTION_NUM_THREADS = (1,2,4,8,10)
@@ -329,6 +336,7 @@ def throughput_contention():
         ThroughputExperiment(
             1,'ContentionThroughput',False,
             num_threads,DEFAULT_NUM_OPERATIONS_PER_THREAD,
+            DEFAULT_WARMUP_OPERATIONS_PER_THREAD,
             num_threads).run()
         
 def error_experiment():
@@ -342,8 +350,12 @@ def fairness_experiment():
     FairnessExperiment('FairnessExperiment',30000,False).run()
 
 
+READ_ONLY_LATENCY_NUM_WARMUP_OPS = 50000
+READ_ONLY_LATENCY_NUM_OPS = 100000
 def read_only_experiment():
-    ReadOnlyExperiment('ReadOnly',30000).run()
+    ReadOnlyLatencyExperiment(
+        'ReadOnlyLatency',READ_ONLY_LATENCY_NUM_OPS,
+        READ_ONLY_LATENCY_NUM_WARMUP_OPS).run()
 
 READ_ONLY_THROUGHPUT_NUM_SWITCHES = (1,2,3,4,5,6)
 READ_ONLY_THROUGHPUT_NUM_THREADS = (1,2,3,4,5,6)
