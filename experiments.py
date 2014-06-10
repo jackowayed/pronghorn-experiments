@@ -293,7 +293,7 @@ DEFAULT_NUM_OPERATIONS_PER_THREAD = 30000
 def latency_rtt():
     for rtt in (0,2,4,8):
         LatencyExperiment(
-            'single_controller_latency',
+            'single_controller_latency_rtt',
             rtt,DEFAULT_NUM_OPERATIONS_PER_THREAD,1).run()
 
             
@@ -301,7 +301,7 @@ def latency_contention():
     for threads in  (1, 2, 4, 6, 8, 10):
         print '\nAbout to run latency_no_rtt threads %i\n' % threads
         LatencyExperiment(
-            'single_controller_latency',
+            'single_controller_latency_contention',
             2,DEFAULT_NUM_OPERATIONS_PER_THREAD,threads).run()
             
 
