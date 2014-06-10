@@ -7,7 +7,6 @@ from experiments import *
 # read_only_experiment()
 # throughput_no_contention_coarse_lock()
 # fairness()
-# throughput_speculative()
 read_only_throughput()
 
 # throughput_contention()
@@ -15,5 +14,3 @@ read_only_throughput()
 
 # error_experiment()
 # fairness_experiment()
-# speculation_across_rtts()
-# speculation_across_ftable_size()

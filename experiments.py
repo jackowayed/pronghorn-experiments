@@ -245,52 +245,6 @@ class ReadOnlyThroughputExperiment(Experiment):
             self,topo,jar_name,output_filename,0,arguments)
 
         
-class SpeculationExperiment(Experiment):
-    def __init__(self, task_name,should_speculate,rtt,flow_table_entries,
-                 num_ops_per_thread):
-        '''
-        @param {string} task_name --- The name to save the task as.
-
-        @param {bool} should_speculate --- True if backend should
-        speculate.  False otherwise.
-
-        @param {int} rtt --- Artificial delay to introduce between
-        controller and switch.
-
-        @param {int} flow_table_entries --- The number of flow table
-        entries to preload into the switch.
-
-        @param {int} num_ops_per_thread --- The number of operations
-        (including warmup) to perform for this experiment.
-        '''
-        topo = FlatTopo(switches=2)
-        jar_name = 'speculation.jar'
-
-        speculation_arg = 'true' if should_speculate else 'false'
-        
-        output_file = output_data_fname(
-            task_name,"%s-%d-%d" % (
-                speculation_arg,
-                rtt * 1000,
-                flow_table_entries))
-        arguments = [num_ops_per_thread,speculation_arg,flow_table_entries]
-        Experiment.__init__(self, topo, jar_name, output_file,rtt, arguments)
-
-
-class ThroughputSpeculativeExperiment(Experiment):
-    def __init__(self, task_name,num_switches,num_ops,should_speculate):
-        '''
-        '''
-        topo = FlatTopo(switches=num_switches)
-        jar_name = 'single_controller_speculation_throughput.jar'
-
-        speculation_arg = 'true' if should_speculate else 'false'
-        
-        output_file = output_data_fname(
-            task_name,"%s-%i" % (speculation_arg,num_switches))
-        arguments = [num_ops,speculation_arg]
-        Experiment.__init__(self, topo, jar_name, output_file,0, arguments)
-
 DEFAULT_NUM_OPERATIONS_PER_THREAD = 30000
 DEFAULT_WARMUP_OPERAIONTS_PER_THREAD = 30000
 def latency_rtt():
@@ -367,34 +321,3 @@ def read_only_throughput():
             ReadOnlyThroughputExperiment(
                 'ReadOnlyThroughput',num_switches,READ_ONLY_THROUGHPUT_NUM_OPS,
                 READ_ONLY_THROUGHPUT_NUM_WARMUP_OPS,num_threads).run()
-            
-THROUGHPUT_SPECULATIVE_NUM_SWITCHES = (2,16,32,64)
-def throughput_speculative():
-    for num_switches in THROUGHPUT_SPECULATIVE_NUM_SWITCHES:
-        ThroughputSpeculativeExperiment(
-            'ThroughputSpeculativeExperiment',num_switches,30000,True).run()
-        ThroughputSpeculativeExperiment(
-            'ThroughputSpeculativeExperiment',num_switches,30000,False).run()
-    
-# run speculation and no speculation tests as we vary the rtt between
-# switch and controller
-def speculation_across_rtts():
-    for rtt in (0,2,4,8):
-        for should_speculate in (True,False):
-            print ('\nRunning speculation experiment with rtt %i.\n' % rtt)
-            SpeculationExperiment(
-                'speculation_rtt',should_speculate,rtt,0,
-                DEFAULT_NUM_OPERATIONS_PER_THREAD).run()
-            
-# run speculatively and non-speculatively on differently-sized
-# ftables.
-def speculation_across_ftable_size():
-    for ftable_preload in (0,100,500,1000,5000,10000):
-        for should_speculate in (True,False):
-            print (
-                '\nRunning speculation experiment with %i ftable entries preloaded.\n' %
-                ftable_preload)
-            SpeculationExperiment(
-                'speculation_ftable',should_speculate,0,ftable_preload,
-                DEFAULT_NUM_OPERATIONS_PER_THREAD).run()
-
