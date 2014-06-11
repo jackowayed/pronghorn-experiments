@@ -246,7 +246,7 @@ class ReadOnlyThroughputExperiment(Experiment):
 
         
 DEFAULT_NUM_OPERATIONS_PER_THREAD = 30000
-DEFAULT_WARMUP_OPERAIONTS_PER_THREAD = 30000
+DEFAULT_WARMUP_OPERATIONS_PER_THREAD = 30000
 def latency_rtt():
     for rtt in (0,2,4,8):
         LatencyExperiment(
