@@ -191,6 +191,11 @@ def run_test(jar_name,local_filename_to_save_results_to,
     for host_entry in reversed(host_entry_list):
         host_entry.start_mininet(num_switches_per_controller)
 
+    time.sleep(10)
+    
+    for host_entry in reversed(host_entry_list):
+        host_entry.version_mininet(num_switches_per_controller)
+
     # wait for experiment to complete
     time.sleep(max_experiment_wait_time_seconds)
 
@@ -216,8 +221,22 @@ class HostEntry(object):
         self.username = username
         self.hostname = hostname
 
+    def version_mininet(self,num_switches):
+        '''
+        Update each switch to speak 1.3 protocol instead of 1.0
+        '''
+        # start at 1 because switches are named starting at 1 as s1,
+        # s2, s3, etc.
+        for i in range(1,1+num_switches):
+            bridge_cmd = (
+                'sudo ovs-vsctl set bridge s%i protocols=OpenFlow13' %
+                i)
+            self.issue_ssh(bridge_cmd)
+        
     def start_mininet(self,num_switches):
-        ssh_cmd_str = 'sudo mn --controller=remote --topo=linear,%i' % num_switches
+        ssh_cmd_str = (
+            'sudo mn --controller=remote --topo=linear,%i' % num_switches)
+
         self.issue_ssh(ssh_cmd_str)
 
     def stop_mininet(self):
