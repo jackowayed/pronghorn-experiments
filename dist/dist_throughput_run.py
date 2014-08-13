@@ -21,7 +21,7 @@ def linear_throughput_test(local_filename_to_save_to,
         THROUGHPUT_TEST_JAR_NAME,
         local_filename_to_save_to,
         num_ops_per_switch,
-        'java -ea -jar %s %s %i %i -1 %s',
+        'java -jar %s %s %i %i -1 %s',
         MAX_EXPERIMENT_WAIT_TIME_SECONDS,
         num_switches_per_controller)
 

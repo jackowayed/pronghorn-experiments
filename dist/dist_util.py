@@ -227,11 +227,12 @@ class HostEntry(object):
         '''
         # start at 1 because switches are named starting at 1 as s1,
         # s2, s3, etc.
+        bridge_cmd = ''
         for i in range(1,1+num_switches):
-            bridge_cmd = (
-                'sudo ovs-vsctl set bridge s%i protocols=OpenFlow13' %
+            bridge_cmd += (
+                'sudo ovs-vsctl set bridge s%i protocols=OpenFlow13; ' %
                 i)
-            self.issue_ssh(bridge_cmd)
+        self.issue_ssh(bridge_cmd)
         
     def start_mininet(self,num_switches):
         ssh_cmd_str = (
