@@ -192,6 +192,11 @@ def run_test(jar_name,local_filename_to_save_results_to,
         host_entry.start_mininet(num_switches_per_controller)
         host_entry.version_mininet(num_switches_per_controller)
 
+    time.sleep(10)
+    
+    for host_entry in reversed(host_entry_list):
+        host_entry.version_mininet(num_switches_per_controller)
+
     # wait for experiment to complete
     time.sleep(max_experiment_wait_time_seconds)
 
