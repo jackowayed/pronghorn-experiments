@@ -10,7 +10,7 @@ from dist_util import run_tree_test
 
 THROUGHPUT_TEST_JAR_NAME = 'multi_controller_throughput.jar'
 
-DEFAULT_NUM_OPS_TO_RUN = 10000
+DEFAULT_NUM_OPS_TO_RUN = 3000
 # DEFAULT_NUM_OPS_TO_RUN = 1000
 MAX_EXPERIMENT_WAIT_TIME_SECONDS = 3000
 

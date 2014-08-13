@@ -2,6 +2,7 @@
 
 import subprocess
 import time
+import os
 
 DEFAULT_JAR_DIRECTORY = 'experiments_jar_dir'
 
@@ -183,20 +184,28 @@ def run_test(jar_name,local_filename_to_save_results_to,
                      num_ops_to_run_per_switch,
                      foreign_output_filename))
 
-        host_entry_to_start.issue_ssh(ssh_cmd)
+        host_log_filename = host_entry_to_start.hostname + '_log.txt'
+        host_entry_to_start.issue_ssh(ssh_cmd,False,host_log_filename)
         time.sleep(BETWEEN_NODE_WAIT_TIME_SECONDS)
 
     # now that we've started all nodes, start mininet on all nodes:
     # start in reverse order so that can ensure last node
     for host_entry in reversed(host_entry_list):
         host_entry.start_mininet(num_switches_per_controller)
-        host_entry.version_mininet(num_switches_per_controller)
 
-    time.sleep(10)
+    time.sleep(100)
+
+    print '\n\n\n\n'
+    print 'Starting versioning'
+    print '\n\n\n\n'
     
     for host_entry in reversed(host_entry_list):
         host_entry.version_mininet(num_switches_per_controller)
 
+    print '\n\n\n\n'
+    print 'Finished versioning'
+    print '\n\n\n\n'
+        
     # wait for experiment to complete
     time.sleep(max_experiment_wait_time_seconds)
 
@@ -233,12 +242,11 @@ class HostEntry(object):
             bridge_cmd += (
                 'sudo ovs-vsctl set bridge s%i protocols=OpenFlow13; ' %
                 i)
-        self.issue_ssh(bridge_cmd)
+        self.issue_ssh(bridge_cmd,True)
         
     def start_mininet(self,num_switches):
         ssh_cmd_str = (
             'sudo mn --controller=remote --topo=linear,%i' % num_switches)
-
         self.issue_ssh(ssh_cmd_str)
 
     def stop_mininet(self):
@@ -281,13 +289,20 @@ class HostEntry(object):
         p = subprocess.Popen(cmd_vec)
         p.wait()
         
-    def issue_ssh(self,ssh_cmd_str,block_until_completion=False):
+    def issue_ssh(self,ssh_cmd_str,block_until_completion=False,
+                  fname_to_pipe_to=None):
         cmd_vec = ['ssh','-o','StrictHostKeyChecking=no']
         if self.key_filename is not None:
             cmd_vec.extend(['-i',self.key_filename])
         cmd_vec.append('%s@%s' % (self.username,self.hostname))
         cmd_vec.append(ssh_cmd_str)
-        p = subprocess.Popen(cmd_vec,stderr=subprocess.STDOUT)
+
+        if fname_to_pipe_to is not None:
+            with open(fname_to_pipe_to,'w') as fd:
+                p = subprocess.Popen(
+                    cmd_vec,stderr=fd,stdout=fd)
+        else:
+            p = subprocess.Popen(cmd_vec,stderr=subprocess.STDOUT)
         
         if block_until_completion:
             p.wait()
