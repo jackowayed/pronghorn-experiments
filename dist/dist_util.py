@@ -240,7 +240,7 @@ class HostEntry(object):
         '''
         ssh_cmd = (
             'sudo ovs-vsctl list-br | xargs -L 1 -I ' +
-            '\'{1}\' ovs-vsctl del-br \'{1}\'')
+            '\'{1}\' sudo ovs-vsctl del-br \'{1}\'')
         return self.issue_ssh(ssh_cmd)
         
     def version_mininet(self,num_switches):
