@@ -69,6 +69,7 @@ def kill_all(host_entry_list,jar_name):
     for host_entry in host_entry_list:
         waiting_on_list.append(host_entry.stop_mininet())
         waiting_on_list.append(host_entry.issue_pkill(jar_name))
+        waiting_on_list.append(host_entry.issue_bridges_down())
 
     for waiting_on in waiting_on_list:
         waiting_on.wait()
@@ -231,6 +232,17 @@ class HostEntry(object):
         self.username = username
         self.hostname = hostname
 
+    def issue_bridges_down(self):
+        '''
+        Stopping mininet sometimes doesn't cleanly bring down all the
+        bridges that we set up.  Therefore, we expclicitly bring
+        switches down with an ssh command.
+        '''
+        ssh_cmd = (
+            'sudo ovs-vsctl list-br | xargs -L 1 -I ' +
+            '\'{1}\' ovs-vsctl del-br \'{1}\'')
+        return self.issue_ssh(ssh_cmd)
+        
     def version_mininet(self,num_switches):
         '''
         Update each switch to speak 1.3 protocol instead of 1.0
