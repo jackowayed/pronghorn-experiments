@@ -6,7 +6,6 @@ import sys
 import time
 import threading
 
-#from net-test import FlatTopo
 from mininet.net import Mininet
 from mininet.node import OVSSwitch, Controller, RemoteController
 from mininet.topo import Topo
@@ -20,6 +19,9 @@ with open(os.path.dirname(os.path.realpath(__file__)) + "/basedir.txt", 'r') as 
     
 EXPERIMENTS_JAR_DIR = os.path.join(BASE_PATH,'experiment_jars')
 PAPER_DATA = os.path.join(BASE_PATH, "data")
+
+# controls whether we instantiate a factory to listen for changes or not.
+NO_VERSION_LISTENER_FACTORY = 'no-listener-factory'
 
 
 START = int(time.time())
@@ -103,12 +105,11 @@ class setup():
             'ovs-vsctl list-br | xargs -L 1 -I ' +
             '\'{1}\' ovs-vsctl del-br \'{1}\'')
         subprocess.call(destroy_cmd)
-        
-            
+
 class Experiment:
     def __init__(
         self, topology, jar_name, output_file,rtt=0,
-        arguments=None,
+        arguments=None,version_listener_factory=NO_VERSION_LISTENER_FACTORY,
         # default is to not collect statistics
         collect_stats_period_ms = -1,
         num_controllers=1):
@@ -123,6 +124,7 @@ class Experiment:
             self.arguments = arguments
         self.arguments.append(str(collect_stats_period_ms))
         self.arguments.append(self.output_file)
+        self.arguments.append(version_listener_factory)
         self.arguments = map(
             lambda to_stringify: str(to_stringify),
             self.arguments)
@@ -276,7 +278,7 @@ def latency_contention():
             DEFAULT_WARMUP_OPERATIONS_PER_THREAD,threads).run()
             
 
-THROUGHPUT_NO_CONTENTION_NUM_SWITCHES = (1, 5, 10, 20, 60)
+THROUGHPUT_NO_CONTENTION_NUM_SWITCHES = (1, 5, 10, 20, 40)
 def throughput_no_contention():
     for num_switches in THROUGHPUT_NO_CONTENTION_NUM_SWITCHES:
         print (
