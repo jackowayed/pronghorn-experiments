@@ -94,7 +94,7 @@ class setup():
         # add a bridge for each so that it communicates using openflow 1.3
         for i in range(1,num_switches+1):
             bridge_cmd = 'ovs-vsctl set bridge s%i protocols=OpenFlow13; ' % i
-            subprocess.call(bridge_cmd)
+            subprocess.call(bridge_cmd,shell=True)
         return self
 
     def __exit__(self, type, value, traceback):
@@ -104,7 +104,7 @@ class setup():
         destroy_cmd = (
             'ovs-vsctl list-br | xargs -L 1 -I ' +
             '\'{1}\' ovs-vsctl del-br \'{1}\'')
-        subprocess.call(destroy_cmd)
+        subprocess.call(destroy_cmd,shell=True)
 
 class Experiment:
     def __init__(
