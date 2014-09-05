@@ -7,7 +7,7 @@ throughput_no_contention()
 latency_contention()
 latency_rtt()
 read_only_experiment()
-fairness()
+fairness_experiment()
 error_experiment()
 read_only_throughput()
 
