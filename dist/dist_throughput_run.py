@@ -14,6 +14,8 @@ DEFAULT_NUM_OPS_TO_RUN = 10000
 # DEFAULT_NUM_OPS_TO_RUN = 1000
 MAX_EXPERIMENT_WAIT_TIME_SECONDS = 3000
 
+JAVA_COMMAND_STRING = 'java -jar %s %s %i %i -1 %s no-listener-factory'
+
 def linear_throughput_test(local_filename_to_save_to,
                         num_switches_per_controller,
                         num_ops_per_switch=DEFAULT_NUM_OPS_TO_RUN):
@@ -21,7 +23,7 @@ def linear_throughput_test(local_filename_to_save_to,
         THROUGHPUT_TEST_JAR_NAME,
         local_filename_to_save_to,
         num_ops_per_switch,
-        'java -jar %s %s %i %i -1 %s',
+        JAVA_COMMAND_STRING,
         MAX_EXPERIMENT_WAIT_TIME_SECONDS,
         num_switches_per_controller)
 
@@ -32,7 +34,7 @@ def tree_throughput_test(local_filename_to_save_to,
         THROUGHPUT_TEST_JAR_NAME,
         local_filename_to_save_to,
         num_ops_per_switch,
-        'java -jar %s %s %i %i -1 %s',
+        JAVA_COMMAND_STRING,
         MAX_EXPERIMENT_WAIT_TIME_SECONDS,
         num_switches_per_controller)
 

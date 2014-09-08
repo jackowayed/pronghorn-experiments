@@ -17,7 +17,6 @@ MAX_EXPERIMENT_WAIT_TIME_SECONDS = 3000
 # DEFAULT_NUM_OPS_TO_RUN = 300
 # MAX_EXPERIMENT_WAIT_TIME_SECONDS = 45
 
-
 def linear_speculation_test(local_filename_to_save_to,
                             num_switches_per_controller,
                             should_speculate_arg,
@@ -27,7 +26,7 @@ def linear_speculation_test(local_filename_to_save_to,
         SPECULATION_TEST_JAR_NAME,
         local_filename_to_save_to,
         num_ops_per_switch,
-        'java -jar %s %s %i %i ' + should_speculate_arg + ' -1 %s',
+        'java -jar %s %s %i %i ' + should_speculate_arg + ' -1 %s no-listener-factory',
         MAX_EXPERIMENT_WAIT_TIME_SECONDS,
         num_switches_per_controller)
 
@@ -39,7 +38,7 @@ def tree_speculation_test(local_filename_to_save_to,
         SPECULATION_TEST_JAR_NAME,
         local_filename_to_save_to,
         num_ops_per_switch,
-        'java -jar %s %s %i %i ' + should_speculate_arg + ' -1 %s',
+        'java -jar %s %s %i %i ' + should_speculate_arg + ' -1 %s no-listener-factory',
         MAX_EXPERIMENT_WAIT_TIME_SECONDS,
         num_switches_per_controller)
 
