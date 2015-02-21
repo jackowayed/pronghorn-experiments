@@ -3,6 +3,7 @@
 import subprocess
 import time
 import os
+import sys
 
 DEFAULT_JAR_DIRECTORY = 'experiments_jar_dir'
 
@@ -186,6 +187,10 @@ def run_test(jar_name,local_filename_to_save_results_to,
                      num_ops_to_run_per_switch,
                      foreign_output_filename))
 
+        print '\n\n'
+        print ssh_cmd
+        print '\n\n'
+
         host_log_filename = host_entry_to_start.hostname + '_log.txt'
         host_entry_to_start.issue_ssh(ssh_cmd,False,host_log_filename)
         time.sleep(BETWEEN_NODE_WAIT_TIME_SECONDS)
@@ -195,11 +200,17 @@ def run_test(jar_name,local_filename_to_save_results_to,
     for host_entry in reversed(host_entry_list):
         host_entry.start_mininet(num_switches_per_controller)
 
-    time.sleep(100)
+
+    print '\n\nBefore sleep\n\n'
+    sys.stdout.flush()
+    # time.sleep(100)
+    #time.sleep(40)
+    time.sleep(10)
 
     print '\n\n\n\n'
     print 'Starting versioning'
     print '\n\n\n\n'
+    sys.stdout.flush()
     
     for host_entry in reversed(host_entry_list):
         host_entry.version_mininet(num_switches_per_controller)
@@ -207,7 +218,8 @@ def run_test(jar_name,local_filename_to_save_results_to,
     print '\n\n\n\n'
     print 'Finished versioning'
     print '\n\n\n\n'
-        
+    sys.stdout.flush()
+    
     # wait for experiment to complete
     time.sleep(max_experiment_wait_time_seconds)
 

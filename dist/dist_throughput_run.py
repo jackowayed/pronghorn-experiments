@@ -14,7 +14,7 @@ DEFAULT_NUM_OPS_TO_RUN = 10000
 # DEFAULT_NUM_OPS_TO_RUN = 1000
 MAX_EXPERIMENT_WAIT_TIME_SECONDS = 3000
 
-JAVA_COMMAND_STRING = 'java -jar %s %s %i %i -1 %s no-listener-factory'
+JAVA_COMMAND_STRING = 'java -jar %s %s %i %i -1 %s'
 
 def linear_throughput_test(local_filename_to_save_to,
                         num_switches_per_controller,
