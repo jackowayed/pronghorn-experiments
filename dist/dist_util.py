@@ -70,7 +70,8 @@ def kill_all(host_entry_list,jar_name):
         waiting_on_list.append(host_entry.stop_mininet())
         waiting_on_list.append(host_entry.issue_pkill(jar_name))
         waiting_on_list.append(host_entry.issue_bridges_down())
-
+        waiting_on_list.append(host_entry.issue_stop_ovs_controller())
+        
     for waiting_on in waiting_on_list:
         waiting_on.wait()
 
@@ -232,6 +233,10 @@ class HostEntry(object):
         self.username = username
         self.hostname = hostname
 
+    def issue_stop_ovs_controller(self):
+        ssh_cmd = 'sudo service openvswitch-controller stop'
+        return self.issue_ssh(ssh_cmd)
+        
     def issue_bridges_down(self):
         '''
         Stopping mininet sometimes doesn't cleanly bring down all the

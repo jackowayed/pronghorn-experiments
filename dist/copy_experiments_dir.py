@@ -43,4 +43,3 @@ if __name__ == '__main__':
     else:
         local_experiments_folder_name = sys.argv[1]
         run(local_experiments_folder_name)
-
